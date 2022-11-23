@@ -36,6 +36,7 @@ require (
 	github.com/dgraph-io/ristretto v0.1.1 // indirect
 	github.com/dgryski/go-farm v0.0.0-20200201041132-a6ae2369ad13 // indirect
 	github.com/dustin/go-humanize v1.0.0 // indirect
+	github.com/go-ap/storage-boltdb v0.0.0-20221123094125-81846f356ad6 // indirect
 	github.com/go-chi/chi v4.1.2+incompatible // indirect
 	github.com/gogo/protobuf v1.3.2 // indirect
 	github.com/golang/glog v1.0.0 // indirect
