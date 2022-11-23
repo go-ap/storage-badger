@@ -1,5 +1,3 @@
-//go:build storage_badger || storage_all || (!storage_pgx && !storage_boltdb && !storage_fs && !storage_sqlite)
-
 package badger
 
 import "git.sr.ht/~mariusor/lw"

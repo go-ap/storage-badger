@@ -1,5 +1,3 @@
-//go:build storage_badger || storage_all || (!storage_pgx && !storage_boltdb && !storage_fs && !storage_sqlite)
-
 package badger
 
 import (
@@ -8,22 +6,18 @@ import (
 
 	vocab "github.com/go-ap/activitypub"
 	ap "github.com/go-ap/fedbox/activitypub"
-	"github.com/go-ap/fedbox/internal/config"
 	"github.com/go-ap/jsonld"
 )
 
 var encodeFn = jsonld.Marshal
 var decodeFn = jsonld.Unmarshal
 
-func Bootstrap(conf config.Options) error {
-	r, err := New(Config{
-		Path:    conf.BaseStoragePath(),
-		BaseURL: conf.BaseURL,
-	})
+func Bootstrap(conf Config, url string) error {
+	r, err := New(conf)
 	if err != nil {
 		return err
 	}
-	self := ap.Self(ap.DefaultServiceIRI(conf.BaseURL))
+	self := ap.Self(ap.DefaultServiceIRI(url))
 	actors := &vocab.OrderedCollection{ID: ap.ActorsType.IRI(&self)}
 	activities := &vocab.OrderedCollection{ID: ap.ActivitiesType.IRI(&self)}
 	objects := &vocab.OrderedCollection{ID: ap.ObjectsType.IRI(&self)}
@@ -39,13 +33,10 @@ func Bootstrap(conf config.Options) error {
 	return nil
 }
 
-func Clean(conf config.Options) error {
-	path, err := Path(Config{
-		Path:    conf.BaseStoragePath(),
-		BaseURL: conf.BaseURL,
-	})
+func Clean(conf Config) error {
+	path, err := Path(conf)
 	if err != nil {
-		return fmt.Errorf("unable to update %s db: %w", conf.Storage, err)
+		return fmt.Errorf("unable to update %s db: %w", "badger", err)
 	}
 
 	return os.RemoveAll(path)

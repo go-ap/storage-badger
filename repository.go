@@ -1,5 +1,3 @@
-//go:build storage_badger || storage_all || (!storage_pgx && !storage_boltdb && !storage_fs && !storage_sqlite)
-
 package badger
 
 import (
@@ -15,10 +13,10 @@ import (
 	vocab "github.com/go-ap/activitypub"
 	"github.com/go-ap/errors"
 	ap "github.com/go-ap/fedbox/activitypub"
-	"github.com/go-ap/fedbox/internal/cache"
 	"github.com/go-ap/fedbox/storage"
 	"github.com/go-ap/jsonld"
 	"github.com/go-ap/processing"
+	"github.com/go-ap/storage-badger/internal/cache"
 	"golang.org/x/crypto/bcrypt"
 )
 

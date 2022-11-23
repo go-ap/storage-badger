@@ -1,0 +1,13 @@
+image: archlinux
+packages:
+  - go
+sources:
+  - https://github.com/go-ap/storage-badger
+environment:
+  GO111MODULE: 'on'
+tasks:
+  - tests: |
+      cd storage-badger && make test
+  - coverage: |
+      set -a +x
+      cd storage-badger && make coverage
