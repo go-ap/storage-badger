@@ -5,9 +5,8 @@ import (
 	"crypto"
 	"crypto/x509"
 	"encoding/pem"
-	"git.sr.ht/~mariusor/lw"
 	"os"
-	"path"
+	"path/filepath"
 
 	"github.com/dgraph-io/badger/v3"
 	vocab "github.com/go-ap/activitypub"
@@ -27,22 +26,24 @@ const (
 )
 
 type repo struct {
-	d       *badger.DB
-	path    string
-	cache   cache.CanStore
-	logger  lw.Logger
+	d     *badger.DB
+	path  string
+	cache cache.CanStore
+	logFn loggerFn
+	errFn loggerFn
 }
 
-type loggerFn func(lw.Ctx, string, ...interface{})
+type loggerFn func(string, ...interface{})
 
 // Config
 type Config struct {
-	Path    string
+	Path        string
 	CacheEnable bool
-	Logger  lw.Logger
+	LogFn       loggerFn
+	ErrFn       loggerFn
 }
 
-var emptyLogFn = func(lw.Ctx, string, ...interface{}) {}
+var emptyLogFn = func(string, ...interface{}) {}
 
 // New returns a new repo repository
 func New(c Config) (*repo, error) {
@@ -52,9 +53,16 @@ func New(c Config) (*repo, error) {
 		return nil, err
 	}
 	b := repo{
-		path:    c.Path,
-		logger:  c.Logger,
+		path:  c.Path,
+		logFn: emptyLogFn,
+		errFn: emptyLogFn,
 		cache: cache.New(c.CacheEnable),
+	}
+	if c.LogFn != nil {
+		b.logFn = c.LogFn
+	}
+	if c.ErrFn != nil {
+		b.errFn = c.ErrFn
 	}
 	return &b, nil
 }
@@ -62,9 +70,8 @@ func New(c Config) (*repo, error) {
 // Open opens the badger database if possible.
 func (r *repo) Open() error {
 	c := badger.DefaultOptions(r.path)
-	if r.logger != nil {
-		c = c.WithLogger(&logger{r.logger})
-	}
+	logger := logger {logFn: r.logFn, errFn: r.errFn}
+	c = c.WithLogger(logger)
 	if r.path == "" {
 		c.InMemory = true
 	}
@@ -79,7 +86,7 @@ func (r *repo) Open() error {
 }
 
 // Close closes the badger database if possible.
-func (r *repo) Close() error {
+func (r *repo) close() error {
 	if r.d == nil {
 		return nil
 	}
@@ -136,7 +143,7 @@ func (r *repo) Save(it vocab.Item) (vocab.Item, error) {
 		if !id.IsValid() {
 			op = "Added new"
 		}
-		r.logger.Infof("%s %s: %s", op, it.GetType(), it.GetLink())
+		r.logFn("%s %s: %s", op, it.GetType(), it.GetLink())
 	}
 
 	return it, err
@@ -375,7 +382,7 @@ func delete(r *repo, it vocab.Item) error {
 		return vocab.OnCollectionIntf(it, func(c vocab.CollectionInterface) error {
 			for _, it := range c.Collection() {
 				if err := delete(r, it); err != nil {
-					r.logger.Infof("Unable to remove item %s", it.GetLink())
+					r.errFn("Unable to remove item %s: %+s", it.GetLink(), err)
 				}
 			}
 			return nil
@@ -652,7 +659,7 @@ func isObjectKey(k []byte) bool {
 }
 
 func isStorageCollectionKey(p []byte) bool {
-	lst := vocab.CollectionPath(path.Base(string(p)))
+	lst := vocab.CollectionPath(filepath.Base(string(p)))
 	return vocab.CollectionPaths{ap.ActivitiesType, ap.ActorsType, ap.ObjectsType}.Contains(lst)
 }
 
@@ -691,7 +698,7 @@ func (r *repo) loadFromPath(f processing.Filterable, loadMaxOne bool) (vocab.Ite
 			}
 			if isObjectKey(k) {
 				if err := i.Value(r.loadFromIterator(&col, f)); err != nil {
-					r.logger.WithContext(lw.Ctx{"k": k, "err": err.Error()}).Errorf("unable to load")
+					r.errFn("unable to load item %s: %+s", k, err)
 					continue
 				}
 				if len(col) == 1 && loadMaxOne {
@@ -794,7 +801,7 @@ func itemPath(iri vocab.IRI) []byte {
 	if err != nil {
 		return nil
 	}
-	return []byte(path.Join(url.Host, url.Path))
+	return []byte(filepath.Join(url.Host, url.Path))
 }
 
 func (r *repo) CreateService(service vocab.Service) error {
@@ -809,7 +816,7 @@ func (r *repo) CreateService(service vocab.Service) error {
 		if !id.IsValid() {
 			op = "Added new"
 		}
-		r.logger.Infof("%s %s: %s", op, it.GetType(), it.GetLink())
+		r.logFn("%s %s: %s", op, it.GetType(), it.GetLink())
 	}
 	return err
 }
@@ -822,16 +829,14 @@ func Path(c Config) (string, error) {
 }
 
 func mkDirIfNotExists(p string) error {
-	fi, err := os.Stat(p)
-	if err != nil && os.IsNotExist(err) {
-		err = os.MkdirAll(p, os.ModeDir|os.ModePerm|0700)
-	}
-	if err != nil {
-		return err
-	}
-	fi, err = os.Stat(p)
-	if err != nil {
-		return err
+	const defaultPerm = os.ModeDir | os.ModePerm | 0700
+	p, _ = filepath.Abs(p)
+	if fi, err := os.Stat(p); err != nil {
+		if os.IsNotExist(err) {
+			if err = os.MkdirAll(p, defaultPerm); err != nil {
+				return err
+			}
+		}
 	} else if !fi.IsDir() {
 		return errors.Errorf("path exists, and is not a folder %s", p)
 	}

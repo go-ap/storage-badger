@@ -10,6 +10,7 @@ require (
 	github.com/go-ap/fedbox v0.0.0-20221120045022-07cf64331c4c
 	github.com/go-ap/jsonld v0.0.0-20221030091449-f2a191312c73
 	github.com/go-ap/processing v0.0.0-20221120042224-7db5474c4a58
+	github.com/openshift/osin v1.0.1
 	golang.org/x/crypto v0.3.0
 )
 
@@ -33,7 +34,6 @@ require (
 	github.com/mariusor/qstring v0.0.0-20200204164351-5a99d46de39d // indirect
 	github.com/mattn/go-colorable v0.1.13 // indirect
 	github.com/mattn/go-isatty v0.0.16 // indirect
-	github.com/openshift/osin v1.0.1 // indirect
 	github.com/pborman/uuid v1.2.1 // indirect
 	github.com/pkg/errors v0.9.1 // indirect
 	github.com/rs/xid v1.4.0 // indirect

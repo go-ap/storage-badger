@@ -1,7 +1,7 @@
 package cache
 
 import (
-	"path"
+	"path/filepath"
 	"sync"
 
 	vocab "github.com/go-ap/activitypub"
@@ -70,7 +70,7 @@ func (r *store) Remove(iris ...vocab.IRI) bool {
 		if vocab.ValidCollectionIRI(iri) {
 			continue
 		}
-		c := vocab.IRI(path.Dir(iri.String()))
+		c := vocab.IRI(filepath.Dir(iri.String()))
 		if !toInvalidate.Contains(c) {
 			toInvalidate = append(toInvalidate, c)
 		}
@@ -151,7 +151,7 @@ func aggregateActivityIRIs(toRemove *vocab.IRIs, a *vocab.Activity, typ vocab.Co
 
 	withSideEffects := vocab.ActivityVocabularyTypes{vocab.UpdateType, vocab.UndoType, vocab.DeleteType}
 	if withSideEffects.Contains(a.GetType()) {
-		base := path.Dir(a.Object.GetLink().String())
+		base := filepath.Dir(a.Object.GetLink().String())
 		*toRemove = append(*toRemove, vocab.IRI(base))
 		*toRemove = append(*toRemove, a.Object.GetLink())
 	}
