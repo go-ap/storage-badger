@@ -1,14 +1,20 @@
 package badger
 
 import (
+	"encoding/gob"
 	"path/filepath"
 	"reflect"
 	"time"
 
 	"github.com/dgraph-io/badger/v3"
+	vocab "github.com/go-ap/activitypub"
 	"github.com/go-ap/errors"
 	"github.com/openshift/osin"
 )
+
+func init() {
+	gob.Register(vocab.IRI(""))
+}
 
 const (
 	clientsBucket   = "clients"

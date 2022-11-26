@@ -84,7 +84,7 @@ func New(c Config) (*repo, error) {
 // Open opens the badger database if possible.
 func (r *repo) Open() error {
 	c := badger.DefaultOptions(r.path)
-	logger := logger {logFn: r.logFn, errFn: r.errFn}
+	logger := logger{logFn: r.logFn, errFn: r.errFn}
 	c = c.WithLogger(logger)
 	if r.path == "" {
 		c.InMemory = true
@@ -190,8 +190,11 @@ func onCollection(r *repo, col vocab.IRI, it vocab.Item, fn func(iris vocab.IRIs
 				if err != nil {
 					return errors.Annotatef(err, "Unable to unmarshal collection %s", p)
 				}
-				var ok bool
-				if iris, ok = it.(vocab.IRIs); !ok {
+				err = vocab.OnIRIs(it, func(col *vocab.IRIs) error {
+					iris = *col
+					return nil
+				})
+				if err != nil {
 					return errors.Annotatef(err, "Unable to unmarshal to IRI collection %s", p)
 				}
 				return nil
@@ -493,8 +496,6 @@ func save(r *repo, it vocab.Item) (vocab.Item, error) {
 		if err := createCollections(tx, it); err != nil {
 			return errors.Annotatef(err, "could not create object's collections")
 		}
-		// TODO(marius): it's possible to set the encoding/decoding functions on the package or storage object level
-		//  instead of using jsonld.(Un)Marshal like this.
 		entryBytes, err := encodeItemFn(it)
 		if err != nil {
 			return errors.Annotatef(err, "could not marshal object")
@@ -511,15 +512,15 @@ func save(r *repo, it vocab.Item) (vocab.Item, error) {
 	return it, err
 }
 
-var emptyCollection = []byte{'[', ']'}
+var emptyCollection, _ = encodeItemFn(vocab.IRIs{})
 
 func createCollectionInPath(b *badger.Txn, it vocab.Item) (vocab.Item, error) {
 	if vocab.IsNil(it) {
 		return nil, nil
 	}
 	p := getObjectKey(itemPath(it.GetLink()))
-	err := b.Set(p, emptyCollection)
-	if err != nil {
+
+	if err := b.Set(p, emptyCollection); err != nil {
 		return nil, err
 	}
 	return it.GetLink(), nil
@@ -811,7 +812,7 @@ func loadItem(raw []byte) (vocab.Item, error) {
 		// TODO(marius): log this instead of stopping the iteration and returning an error
 		return nil, errors.Errorf("empty raw item")
 	}
-	return vocab.UnmarshalJSON(raw)
+	return decodeItemFn(raw)
 }
 
 func itemPath(iri vocab.IRI) []byte {
