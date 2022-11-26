@@ -14,7 +14,6 @@ import (
 	ap "github.com/go-ap/fedbox/activitypub"
 	"github.com/go-ap/fedbox/storage"
 	"github.com/go-ap/jsonld"
-	"github.com/go-ap/processing"
 	"github.com/go-ap/storage-badger/internal/cache"
 	"golang.org/x/crypto/bcrypt"
 )
@@ -44,6 +43,8 @@ type Config struct {
 }
 
 var emptyLogFn = func(string, ...interface{}) {}
+
+type Filterable = vocab.LinkOrIRI
 
 // New returns a new repo repository
 func New(c Config) (*repo, error) {
@@ -519,8 +520,8 @@ func deleteFromPath(r *repo, b *badger.Txn, it vocab.Item) error {
 	return nil
 }
 
-func (r *repo) loadFromIterator(col *vocab.ItemCollection, f processing.Filterable) func(val []byte) error {
-	isColFn := func(ff processing.Filterable) bool {
+func (r *repo) loadFromIterator(col *vocab.ItemCollection, f Filterable) func(val []byte) error {
+	isColFn := func(ff Filterable) bool {
 		_, ok := ff.(vocab.IRI)
 		return ok
 	}
@@ -595,13 +596,13 @@ func (r *repo) loadFromIterator(col *vocab.ItemCollection, f processing.Filterab
 	}
 }
 
-func loadFilteredPropsForActor(r *repo, f processing.Filterable) func(a *vocab.Actor) error {
+func loadFilteredPropsForActor(r *repo, f Filterable) func(a *vocab.Actor) error {
 	return func(a *vocab.Actor) error {
 		return vocab.OnObject(a, loadFilteredPropsForObject(r, f))
 	}
 }
 
-func loadFilteredPropsForObject(r *repo, f processing.Filterable) func(o *vocab.Object) error {
+func loadFilteredPropsForObject(r *repo, f Filterable) func(o *vocab.Object) error {
 	return func(o *vocab.Object) error {
 		if len(o.Tag) == 0 {
 			return nil
@@ -619,7 +620,7 @@ func loadFilteredPropsForObject(r *repo, f processing.Filterable) func(o *vocab.
 		})
 	}
 }
-func loadFilteredPropsForActivity(r *repo, f processing.Filterable) func(a *vocab.Activity) error {
+func loadFilteredPropsForActivity(r *repo, f Filterable) func(a *vocab.Activity) error {
 	return func(a *vocab.Activity) error {
 		if ok, fo := ap.FiltersOnActivityObject(f); ok && !vocab.IsNil(a.Object) && vocab.IsIRI(a.Object) {
 			if ob, err := r.loadOneFromPath(a.Object.GetLink()); err == nil {
@@ -632,7 +633,7 @@ func loadFilteredPropsForActivity(r *repo, f processing.Filterable) func(a *voca
 	}
 }
 
-func loadFilteredPropsForIntransitiveActivity(r *repo, f processing.Filterable) func(a *vocab.IntransitiveActivity) error {
+func loadFilteredPropsForIntransitiveActivity(r *repo, f Filterable) func(a *vocab.IntransitiveActivity) error {
 	return func(a *vocab.IntransitiveActivity) error {
 		if ok, fa := ap.FiltersOnActivityActor(f); ok && !vocab.IsNil(a.Actor) && vocab.IsIRI(a.Actor) {
 			if act, err := r.loadOneFromPath(a.Actor.GetLink()); err == nil {
@@ -670,7 +671,7 @@ func iterKeyIsTooDeep(base, k []byte, depth int) bool {
 	return cnt > depth
 }
 
-func (r *repo) loadFromPath(f processing.Filterable, loadMaxOne bool) (vocab.ItemCollection, error) {
+func (r *repo) loadFromPath(f Filterable, loadMaxOne bool) (vocab.ItemCollection, error) {
 	col := make(vocab.ItemCollection, 0)
 
 	err := r.d.View(func(tx *badger.Txn) error {
@@ -715,7 +716,7 @@ func (r *repo) loadFromPath(f processing.Filterable, loadMaxOne bool) (vocab.Ite
 	return col, err
 }
 
-func (r *repo) LoadOne(f processing.Filterable) (vocab.Item, error) {
+func (r *repo) LoadOne(f Filterable) (vocab.Item, error) {
 	err := r.Open()
 	if err != nil {
 		return nil, err
@@ -724,7 +725,7 @@ func (r *repo) LoadOne(f processing.Filterable) (vocab.Item, error) {
 	return r.loadOneFromPath(f)
 }
 
-func (r *repo) loadOneFromPath(f processing.Filterable) (vocab.Item, error) {
+func (r *repo) loadOneFromPath(f Filterable) (vocab.Item, error) {
 	col, err := r.loadFromPath(f, true)
 	if err != nil {
 		return nil, err
@@ -739,7 +740,7 @@ func getObjectKey(p []byte) []byte {
 	return bytes.Join([][]byte{p, []byte(objectKey)}, sep)
 }
 
-func (r *repo) loadItemsElements(f processing.Filterable, iris ...vocab.Item) (vocab.ItemCollection, error) {
+func (r *repo) loadItemsElements(f Filterable, iris ...vocab.Item) (vocab.ItemCollection, error) {
 	col := make(vocab.ItemCollection, 0)
 	err := r.d.View(func(tx *badger.Txn) error {
 		for _, iri := range iris {
@@ -754,7 +755,7 @@ func (r *repo) loadItemsElements(f processing.Filterable, iris ...vocab.Item) (v
 	return col, err
 }
 
-func (r *repo) loadItem(b *badger.Txn, path []byte, f processing.Filterable) (vocab.Item, error) {
+func (r *repo) loadItem(b *badger.Txn, path []byte, f Filterable) (vocab.Item, error) {
 	i, err := b.Get(getObjectKey(path))
 	if err != nil {
 		return nil, errors.NewNotFound(err, "Unable to load path %s", path)

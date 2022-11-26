@@ -8,7 +8,6 @@ require (
 	github.com/go-ap/errors v0.0.0-20221115052505-8aaa26f930b4
 	github.com/go-ap/fedbox v0.0.0-20221120045022-07cf64331c4c
 	github.com/go-ap/jsonld v0.0.0-20221030091449-f2a191312c73
-	github.com/go-ap/processing v0.0.0-20221126063104-53445d2dd53c
 	github.com/openshift/osin v1.0.1
 	golang.org/x/crypto v0.3.0
 )
@@ -22,6 +21,7 @@ require (
 	github.com/dustin/go-humanize v1.0.0 // indirect
 	github.com/go-ap/client v0.0.0-20221126062204-462866a3146a // indirect
 	github.com/go-ap/httpsig v0.0.0-20210714162115-62a09257db51 // indirect
+	github.com/go-ap/processing v0.0.0-20221126063104-53445d2dd53c // indirect
 	github.com/gogo/protobuf v1.3.2 // indirect
 	github.com/golang/glog v1.0.0 // indirect
 	github.com/golang/groupcache v0.0.0-20210331224755-41bb18bfe9da // indirect
