@@ -6,11 +6,7 @@ import (
 
 	vocab "github.com/go-ap/activitypub"
 	ap "github.com/go-ap/fedbox/activitypub"
-	"github.com/go-ap/jsonld"
 )
-
-var encodeFn = jsonld.Marshal
-var decodeFn = jsonld.Unmarshal
 
 func Bootstrap(conf Config, url string) error {
 	r, err := New(conf)

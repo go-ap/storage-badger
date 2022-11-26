@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"crypto"
 	"crypto/x509"
+	"encoding/gob"
 	"encoding/pem"
 	"os"
 	"path/filepath"
@@ -13,7 +14,6 @@ import (
 	"github.com/go-ap/errors"
 	ap "github.com/go-ap/fedbox/activitypub"
 	"github.com/go-ap/fedbox/storage"
-	"github.com/go-ap/jsonld"
 	"github.com/go-ap/storage-badger/internal/cache"
 	"golang.org/x/crypto/bcrypt"
 )
@@ -30,6 +30,19 @@ type repo struct {
 	cache cache.CanStore
 	logFn loggerFn
 	errFn loggerFn
+}
+
+var encodeItemFn = vocab.GobEncode
+var decodeItemFn = vocab.GobDecode
+
+var encodeFn = func(v any) ([]byte, error) {
+	buf := bytes.Buffer{}
+	err := gob.NewEncoder(&buf).Encode(v)
+	return buf.Bytes(), err
+}
+
+var decodeFn = func(data []byte, m any) error {
+	return gob.NewDecoder(bytes.NewReader(data)).Decode(m)
 }
 
 type loggerFn func(string, ...interface{})
@@ -168,14 +181,18 @@ func onCollection(r *repo, col vocab.IRI, it vocab.Item, fn func(iris vocab.IRIs
 	}
 	defer r.Close()
 	return r.d.Update(func(tx *badger.Txn) error {
-		iris := make(vocab.IRIs, 0)
+		var iris vocab.IRIs
 
 		rawKey := getObjectKey(p)
 		if i, err := tx.Get(rawKey); err == nil {
 			err = i.Value(func(raw []byte) error {
-				err := jsonld.Unmarshal(raw, &iris)
+				it, err := decodeItemFn(raw)
 				if err != nil {
 					return errors.Annotatef(err, "Unable to unmarshal collection %s", p)
+				}
+				var ok bool
+				if iris, ok = it.(vocab.IRIs); !ok {
+					return errors.Annotatef(err, "Unable to unmarshal to IRI collection %s", p)
 				}
 				return nil
 			})
@@ -186,7 +203,7 @@ func onCollection(r *repo, col vocab.IRI, it vocab.Item, fn func(iris vocab.IRIs
 			return errors.Annotatef(err, "Unable operate on collection %s", p)
 		}
 		var raw []byte
-		raw, err = jsonld.Marshal(iris)
+		raw, err = encodeItemFn(iris)
 		if err != nil {
 			return errors.Newf("Unable to marshal entries in collection %s", p)
 		}
@@ -268,7 +285,7 @@ func (r *repo) PasswordSet(it vocab.Item, pw []byte) error {
 		m := storage.Metadata{
 			Pw: pw,
 		}
-		entryBytes, err := jsonld.Marshal(m)
+		entryBytes, err := encodeFn(m)
 		if err != nil {
 			return errors.Annotatef(err, "Could not marshal metadata")
 		}
@@ -298,7 +315,7 @@ func (r *repo) PasswordCheck(it vocab.Item, pw []byte) error {
 			return errors.Annotatef(err, "Could not find metadata in path %s", path)
 		}
 		i.Value(func(raw []byte) error {
-			err := jsonld.Unmarshal(raw, &m)
+			err := decodeFn(raw, &m)
 			if err != nil {
 				return errors.Annotatef(err, "Could not unmarshal metadata")
 			}
@@ -478,7 +495,7 @@ func save(r *repo, it vocab.Item) (vocab.Item, error) {
 		}
 		// TODO(marius): it's possible to set the encoding/decoding functions on the package or storage object level
 		//  instead of using jsonld.(Un)Marshal like this.
-		entryBytes, err := jsonld.Marshal(it)
+		entryBytes, err := encodeItemFn(it)
 		if err != nil {
 			return errors.Annotatef(err, "could not marshal object")
 		}

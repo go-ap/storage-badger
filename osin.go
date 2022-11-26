@@ -1,7 +1,6 @@
 package badger
 
 import (
-	"encoding/json"
 	"path/filepath"
 	"reflect"
 	"time"
@@ -95,7 +94,7 @@ func (r *repo) loadTxnClient(c *osin.DefaultClient, id string) func(tx *badger.T
 func loadRawClient(c *osin.DefaultClient) func(raw []byte) error {
 	return func(raw []byte) error {
 		cl := cl{}
-		if err := json.Unmarshal(raw, &cl); err != nil {
+		if err := decodeFn(raw, &cl); err != nil {
 			return errors.Annotatef(err, "Unable to unmarshal client object")
 		}
 		c.Id = cl.Id
@@ -138,7 +137,7 @@ func (r *repo) UpdateClient(c osin.Client) error {
 		RedirectUri: c.GetRedirectUri(),
 		Extra:       c.GetUserData(),
 	}
-	raw, err := json.Marshal(cl)
+	raw, err := encodeFn(cl)
 	if err != nil {
 		return errors.Annotatef(err, "Unable to marshal client object")
 	}
@@ -186,7 +185,7 @@ func (r *repo) SaveAuthorize(data *osin.AuthorizeData) error {
 		CreatedAt:   data.CreatedAt.UTC(),
 		Extra:       data.UserData,
 	}
-	raw, err := json.Marshal(auth)
+	raw, err := encodeFn(auth)
 	if err != nil {
 		return errors.Annotatef(err, "Unable to marshal authorization object")
 	}
@@ -209,7 +208,7 @@ func (r *repo) loadTxnAuthorize(a *osin.AuthorizeData, code string) func(tx *bad
 func loadRawAuthorize(a *osin.AuthorizeData) func(raw []byte) error {
 	return func(raw []byte) error {
 		auth := auth{}
-		if err := json.Unmarshal(raw, &auth); err != nil {
+		if err := decodeFn(raw, &auth); err != nil {
 			return errors.Annotatef(err, "Unable to unmarshal authorize object")
 		}
 		a.Code = auth.Code
@@ -320,7 +319,7 @@ func (r *repo) SaveAccess(data *osin.AccessData) error {
 		CreatedAt:    data.CreatedAt.UTC(),
 		Extra:        data.UserData,
 	}
-	raw, err := json.Marshal(acc)
+	raw, err := encodeFn(acc)
 	if err != nil {
 		return errors.Annotatef(err, "Unable to marshal access object")
 	}
@@ -332,7 +331,7 @@ func (r *repo) SaveAccess(data *osin.AccessData) error {
 func loadRawAccess(a *osin.AccessData) func(raw []byte) error {
 	return func(raw []byte) error {
 		access := acc{}
-		if err := json.Unmarshal(raw, &access); err != nil {
+		if err := decodeFn(raw, &access); err != nil {
 			return errors.Annotatef(err, "Unable to unmarshal client object")
 		}
 		a.AccessToken = access.AccessToken
@@ -439,7 +438,7 @@ func (r *repo) saveRefresh(txn *badger.Txn, refresh, access string) (err error) 
 	ref := ref{
 		Access: access,
 	}
-	raw, err := json.Marshal(ref)
+	raw, err := encodeFn(ref)
 	if err != nil {
 		return errors.Annotatef(err, "Unable to marshal refresh token object")
 	}
