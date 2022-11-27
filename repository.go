@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"crypto"
 	"crypto/x509"
-	"encoding/gob"
 	"encoding/pem"
 	"os"
 	"path/filepath"
@@ -34,16 +33,6 @@ type repo struct {
 
 var encodeItemFn = vocab.GobEncode
 var decodeItemFn = vocab.GobDecode
-
-var encodeFn = func(v any) ([]byte, error) {
-	buf := bytes.Buffer{}
-	err := gob.NewEncoder(&buf).Encode(v)
-	return buf.Bytes(), err
-}
-
-var decodeFn = func(data []byte, m any) error {
-	return gob.NewDecoder(bytes.NewReader(data)).Decode(m)
-}
 
 type loggerFn func(string, ...interface{})
 
