@@ -31,8 +31,8 @@ type repo struct {
 	errFn loggerFn
 }
 
-var encodeItemFn = vocab.GobEncode
-var decodeItemFn = vocab.GobDecode
+var encodeItemFn = vocab.MarshalJSON
+var decodeItemFn = vocab.UnmarshalJSON
 
 type loggerFn func(string, ...interface{})
 

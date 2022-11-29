@@ -2,20 +2,15 @@ package badger
 
 import (
 	"bytes"
-	"encoding/gob"
+	"encoding/json"
 	"path/filepath"
 	"reflect"
 	"time"
 
 	"github.com/dgraph-io/badger/v3"
-	vocab "github.com/go-ap/activitypub"
 	"github.com/go-ap/errors"
 	"github.com/openshift/osin"
 )
-
-func init() {
-	gob.Register(vocab.IRI(""))
-}
 
 const (
 	clientsBucket   = "clients"
@@ -62,12 +57,12 @@ type ref struct {
 
 var encodeFn = func(v any) ([]byte, error) {
 	buf := bytes.Buffer{}
-	err := gob.NewEncoder(&buf).Encode(v)
+	err := json.NewEncoder(&buf).Encode(v)
 	return buf.Bytes(), err
 }
 
 var decodeFn = func(data []byte, m any) error {
-	return gob.NewDecoder(bytes.NewReader(data)).Decode(m)
+	return json.NewDecoder(bytes.NewReader(data)).Decode(m)
 }
 
 func interfaceIsNil(c interface{}) bool {
