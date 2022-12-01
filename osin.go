@@ -133,6 +133,30 @@ func (r *repo) GetClient(id string) (osin.Client, error) {
 	return c, nil
 }
 
+func (r *repo) ListClients() ([]osin.Client, error) {
+	err := r.Open()
+	if err != nil {
+		return nil, err
+	}
+	defer r.Close()
+	clients := make([]osin.Client, 0)
+	err = r.d.View(func(tx *badger.Txn) error {
+		opts := badger.DefaultIteratorOptions
+		opts.Prefix = badgerItemPath(clientsBucket)
+		it := tx.NewIterator(opts)
+		for it.Seek(opts.Prefix); it.ValidForPrefix(opts.Prefix); it.Next() {
+			item := it.Item()
+
+			c := osin.DefaultClient{}
+			item.Value(loadRawClient(&c))
+
+			clients = append(clients, &c)
+		}
+		return nil
+	})
+	return clients, err
+}
+
 // UpdateClient updates the client (identified by it's id) and replaces the values with the values of client.
 func (r *repo) UpdateClient(c osin.Client) error {
 	if interfaceIsNil(c) {
