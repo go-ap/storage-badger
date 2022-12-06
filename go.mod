@@ -4,7 +4,7 @@ go 1.18
 
 require (
 	github.com/dgraph-io/badger/v3 v3.2103.2
-	github.com/go-ap/activitypub v0.0.0-20221205051756-24cd0c1e821c
+	github.com/go-ap/activitypub v0.0.0-20221206062958-cae46e718d79
 	github.com/go-ap/errors v0.0.0-20221205040414-01c1adfc98ea
 	github.com/go-ap/fedbox v0.0.0-20221120045022-07cf64331c4c
 	github.com/openshift/osin v1.0.1
@@ -18,10 +18,10 @@ require (
 	github.com/cespare/xxhash/v2 v2.1.2 // indirect
 	github.com/dgraph-io/ristretto v0.1.1 // indirect
 	github.com/dustin/go-humanize v1.0.0 // indirect
-	github.com/go-ap/client v0.0.0-20221205034133-b8e0a0089dad // indirect
-	github.com/go-ap/httpsig v0.0.0-20221203064646-3647b4d88fdf // indirect
+	github.com/go-ap/client v0.0.0-20221205125528-067209307344 // indirect
 	github.com/go-ap/jsonld v0.0.0-20221030091449-f2a191312c73 // indirect
-	github.com/go-ap/processing v0.0.0-20221205034840-f0538931e1ee // indirect
+	github.com/go-ap/processing v0.0.0-20221205125724-e600f9d022dc // indirect
+	github.com/go-fed/httpsig v1.1.0 // indirect
 	github.com/gogo/protobuf v1.3.2 // indirect
 	github.com/golang/glog v1.0.0 // indirect
 	github.com/golang/groupcache v0.0.0-20210331224755-41bb18bfe9da // indirect
@@ -41,7 +41,7 @@ require (
 	github.com/stretchr/testify v1.8.1 // indirect
 	github.com/valyala/fastjson v1.6.3 // indirect
 	go.opencensus.io v0.23.0 // indirect
-	golang.org/x/net v0.2.0 // indirect
+	golang.org/x/net v0.3.0 // indirect
 	golang.org/x/oauth2 v0.2.0 // indirect
 	golang.org/x/sys v0.3.0 // indirect
 	google.golang.org/appengine v1.6.7 // indirect
