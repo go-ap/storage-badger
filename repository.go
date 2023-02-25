@@ -53,7 +53,6 @@ func New(c Config) (*repo, error) {
 		path:  c.Path,
 		logFn: emptyLogFn,
 		errFn: emptyLogFn,
-		cache: cache.New(c.CacheEnable),
 	}
 	if c.LogFn != nil {
 		b.logFn = c.LogFn
@@ -517,7 +516,6 @@ func deleteFromPath(r *repo, b *badger.Txn, it vocab.Item) error {
 	if err := b.Delete(p); err != nil {
 		return err
 	}
-	r.cache.Remove(it.GetLink())
 	return nil
 }
 
