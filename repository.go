@@ -11,16 +11,10 @@ import (
 	"github.com/dgraph-io/badger/v3"
 	vocab "github.com/go-ap/activitypub"
 	"github.com/go-ap/errors"
-	ap "github.com/go-ap/fedbox/activitypub"
-	"github.com/go-ap/fedbox/storage"
+	"github.com/go-ap/filters"
+	"github.com/go-ap/processing"
 	"github.com/go-ap/storage-badger/internal/cache"
 	"golang.org/x/crypto/bcrypt"
-)
-
-const (
-	pathActors     = ap.ActorsType
-	pathActivities = ap.ActivitiesType
-	pathObjects    = ap.ObjectsType
 )
 
 type repo struct {
@@ -104,7 +98,7 @@ func (r *repo) Load(i vocab.IRI) (vocab.Item, error) {
 	}
 	defer r.Close()
 
-	f, err := ap.FiltersFromIRI(i)
+	f, err := filters.FiltersFromIRI(i)
 	if err != nil {
 		return nil, err
 	}
@@ -221,7 +215,7 @@ func (r *repo) RemoveFrom(col vocab.IRI, it vocab.Item) error {
 }
 
 func addCollectionOnObject(r *repo, col vocab.IRI) error {
-	allStorageCollections := append(vocab.ActivityPubCollections, ap.FedBOXCollections...)
+	allStorageCollections := append(vocab.ActivityPubCollections, filters.FedBOXCollections...)
 	if ob, t := allStorageCollections.Split(col); vocab.ValidCollection(t) {
 		// Create the collection on the object, if it doesn't exist
 		if i, _ := r.LoadOne(ob); i != nil {
@@ -274,7 +268,7 @@ func (r *repo) PasswordSet(it vocab.Item, pw []byte) error {
 		if err != nil {
 			return errors.Annotatef(err, "Could not encrypt the pw")
 		}
-		m := storage.Metadata{
+		m := processing.Metadata{
 			Pw: pw,
 		}
 		entryBytes, err := encodeFn(m)
@@ -300,7 +294,7 @@ func (r *repo) PasswordCheck(it vocab.Item, pw []byte) error {
 	}
 	defer r.Close()
 
-	m := storage.Metadata{}
+	m := processing.Metadata{}
 	err = r.d.View(func(tx *badger.Txn) error {
 		i, err := tx.Get(getMetadataKey(path))
 		if err != nil {
@@ -322,7 +316,7 @@ func (r *repo) PasswordCheck(it vocab.Item, pw []byte) error {
 }
 
 // LoadMetadata
-func (r *repo) LoadMetadata(iri vocab.IRI) (*storage.Metadata, error) {
+func (r *repo) LoadMetadata(iri vocab.IRI) (*processing.Metadata, error) {
 	err := r.Open()
 	if err != nil {
 		return nil, err
@@ -330,7 +324,7 @@ func (r *repo) LoadMetadata(iri vocab.IRI) (*storage.Metadata, error) {
 	defer r.Close()
 	path := itemPath(iri)
 
-	m := storage.Metadata{}
+	m := processing.Metadata{}
 	err = r.d.View(func(tx *badger.Txn) error {
 		i, err := tx.Get(getMetadataKey(path))
 		if err != nil {
@@ -344,7 +338,7 @@ func (r *repo) LoadMetadata(iri vocab.IRI) (*storage.Metadata, error) {
 }
 
 // SaveMetadata
-func (r *repo) SaveMetadata(m storage.Metadata, iri vocab.IRI) error {
+func (r *repo) SaveMetadata(m processing.Metadata, iri vocab.IRI) error {
 	err := r.Open()
 	if err != nil {
 		return err
@@ -398,10 +392,10 @@ func delete(r *repo, it vocab.Item) error {
 			return nil
 		})
 	}
-	f := ap.FiltersNew()
+	f := filters.FiltersNew()
 	f.IRI = it.GetLink()
 	if it.IsObject() {
-		f.Type = ap.CompStrs{ap.StringEquals(string(it.GetType()))}
+		f.Type = filters.CompStrs{filters.StringEquals(string(it.GetType()))}
 	}
 	old, err := r.loadOneFromPath(f)
 	if err != nil {
@@ -577,7 +571,7 @@ func (r *repo) loadFromIterator(col *vocab.ItemCollection, f Filterable) func(va
 				})
 			}
 
-			it, err = ap.FilterIt(it, f)
+			it, err = filters.FilterIt(it, f)
 			if err != nil {
 				return err
 			}
@@ -629,9 +623,9 @@ func loadFilteredPropsForObject(r *repo, f Filterable) func(o *vocab.Object) err
 }
 func loadFilteredPropsForActivity(r *repo, f Filterable) func(a *vocab.Activity) error {
 	return func(a *vocab.Activity) error {
-		if ok, fo := ap.FiltersOnActivityObject(f); ok && !vocab.IsNil(a.Object) && vocab.IsIRI(a.Object) {
+		if ok, fo := filters.FiltersOnActivityObject(f); ok && !vocab.IsNil(a.Object) && vocab.IsIRI(a.Object) {
 			if ob, err := r.loadOneFromPath(a.Object.GetLink()); err == nil {
-				if ob, _ = ap.FilterIt(ob, fo); ob != nil {
+				if ob, _ = filters.FilterIt(ob, fo); ob != nil {
 					a.Object = ob
 				}
 			}
@@ -642,16 +636,16 @@ func loadFilteredPropsForActivity(r *repo, f Filterable) func(a *vocab.Activity)
 
 func loadFilteredPropsForIntransitiveActivity(r *repo, f Filterable) func(a *vocab.IntransitiveActivity) error {
 	return func(a *vocab.IntransitiveActivity) error {
-		if ok, fa := ap.FiltersOnActivityActor(f); ok && !vocab.IsNil(a.Actor) && vocab.IsIRI(a.Actor) {
+		if ok, fa := filters.FiltersOnActivityActor(f); ok && !vocab.IsNil(a.Actor) && vocab.IsIRI(a.Actor) {
 			if act, err := r.loadOneFromPath(a.Actor.GetLink()); err == nil {
-				if act, _ = ap.FilterIt(act, fa); act != nil {
+				if act, _ = filters.FilterIt(act, fa); act != nil {
 					a.Actor = act
 				}
 			}
 		}
-		if ok, ft := ap.FiltersOnActivityTarget(f); ok && !vocab.IsNil(a.Target) && vocab.IsIRI(a.Target) {
+		if ok, ft := filters.FiltersOnActivityTarget(f); ok && !vocab.IsNil(a.Target) && vocab.IsIRI(a.Target) {
 			if t, err := r.loadOneFromPath(a.Target.GetLink()); err == nil {
-				if t, _ = ap.FilterIt(t, ft); t != nil {
+				if t, _ = filters.FilterIt(t, ft); t != nil {
 					a.Target = t
 				}
 			}
@@ -668,7 +662,7 @@ func isObjectKey(k []byte) bool {
 
 func isStorageCollectionKey(p []byte) bool {
 	lst := vocab.CollectionPath(filepath.Base(string(p)))
-	return vocab.CollectionPaths{ap.ActivitiesType, ap.ActorsType, ap.ObjectsType}.Contains(lst)
+	return vocab.CollectionPaths{filters.ActivitiesType, filters.ActorsType, filters.ObjectsType}.Contains(lst)
 }
 
 func iterKeyIsTooDeep(base, k []byte, depth int) bool {
@@ -791,7 +785,7 @@ func (r *repo) loadItem(b *badger.Txn, path []byte, f Filterable) (vocab.Item, e
 		it, _ = r.loadOneFromPath(it.GetLink())
 	}
 	if f != nil {
-		return ap.FilterIt(it, f)
+		return filters.FilterIt(it, f)
 	}
 	return it, nil
 }
