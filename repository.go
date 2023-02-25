@@ -804,7 +804,7 @@ func itemPath(iri vocab.IRI) []byte {
 	return []byte(filepath.Join(url.Host, url.Path))
 }
 
-func (r *repo) CreateService(service vocab.Service) error {
+func (r *repo) CreateService(service *vocab.Service) error {
 	err := r.Open()
 	defer r.Close()
 	if err != nil {
@@ -815,6 +815,11 @@ func (r *repo) CreateService(service vocab.Service) error {
 		id := it.GetID()
 		if !id.IsValid() {
 			op = "Added new"
+		}
+		for _, stream := range service.Streams {
+			if _, err := r.Create(&vocab.OrderedCollection{ID: stream.GetID()}); err != nil {
+				r.errFn("Unable to create %s collection for actor %s", stream.GetID(), service.GetLink())
+			}
 		}
 		r.logFn("%s %s: %s", op, it.GetType(), it.GetLink())
 	}

@@ -5,28 +5,14 @@ import (
 	"os"
 
 	vocab "github.com/go-ap/activitypub"
-	ap "github.com/go-ap/fedbox/activitypub"
 )
 
-func Bootstrap(conf Config, url string) error {
+func Bootstrap(conf Config, self vocab.Item) error {
 	r, err := New(conf)
 	if err != nil {
 		return err
 	}
-	self := ap.Self(ap.DefaultServiceIRI(url))
-	actors := &vocab.OrderedCollection{ID: ap.ActorsType.IRI(&self)}
-	activities := &vocab.OrderedCollection{ID: ap.ActivitiesType.IRI(&self)}
-	objects := &vocab.OrderedCollection{ID: ap.ObjectsType.IRI(&self)}
-	if _, err = r.Create(actors); err != nil {
-		return err
-	}
-	if _, err = r.Create(activities); err != nil {
-		return err
-	}
-	if _, err = r.Create(objects); err != nil {
-		return err
-	}
-	return nil
+	return vocab.OnActor(self, r.CreateService)
 }
 
 func Clean(conf Config) error {
