@@ -4,11 +4,10 @@ go 1.18
 
 require (
 	github.com/dgraph-io/badger/v3 v3.2103.5
-	github.com/go-ap/activitypub v0.0.0-20230218112952-bfb607b04799
+	github.com/go-ap/activitypub v0.0.0-20230301123505-7471bcd90729
 	github.com/go-ap/errors v0.0.0-20221205040414-01c1adfc98ea
-	github.com/go-ap/fedbox v0.0.0-20221120045022-07cf64331c4c
-	github.com/go-ap/filters v0.0.0-20230225113357-513e37666519
-	github.com/go-ap/processing v0.0.0-20230225124541-9edf4a0a08ee
+	github.com/go-ap/filters v0.0.0-20230301123836-a52deb17e105
+	github.com/go-ap/processing v0.0.0-20230301123739-32448e889e60
 	github.com/openshift/osin v1.0.1
 	golang.org/x/crypto v0.6.0
 )
@@ -19,8 +18,9 @@ require (
 	github.com/cespare/xxhash v1.1.0 // indirect
 	github.com/cespare/xxhash/v2 v2.2.0 // indirect
 	github.com/dgraph-io/ristretto v0.1.1 // indirect
+	github.com/dgryski/go-farm v0.0.0-20200201041132-a6ae2369ad13 // indirect
 	github.com/dustin/go-humanize v1.0.0 // indirect
-	github.com/go-ap/client v0.0.0-20230218115938-0fe3ee2edd31 // indirect
+	github.com/go-ap/client v0.0.0-20230301123545-b7132ac50856 // indirect
 	github.com/go-ap/jsonld v0.0.0-20221030091449-f2a191312c73 // indirect
 	github.com/go-fed/httpsig v1.1.0 // indirect
 	github.com/gogo/protobuf v1.3.2 // indirect
