@@ -4,12 +4,12 @@ go 1.18
 
 require (
 	github.com/dgraph-io/badger/v3 v3.2103.5
-	github.com/go-ap/activitypub v0.0.0-20230331173947-f5b96d9450d4
+	github.com/go-ap/activitypub v0.0.0-20230509081506-c63baa5ec992
 	github.com/go-ap/errors v0.0.0-20221205040414-01c1adfc98ea
-	github.com/go-ap/filters v0.0.0-20230402103332-be164708444f
-	github.com/go-ap/processing v0.0.0-20230402103201-6798993132ff
+	github.com/go-ap/filters v0.0.0-20230509081808-5c9e638a1c6d
+	github.com/go-ap/processing v0.0.0-20230509081745-6ee86e9025cc
 	github.com/openshift/osin v1.0.1
-	golang.org/x/crypto v0.7.0
+	golang.org/x/crypto v0.9.0
 )
 
 require (
@@ -20,7 +20,7 @@ require (
 	github.com/dgraph-io/ristretto v0.1.1 // indirect
 	github.com/dgryski/go-farm v0.0.0-20200201041132-a6ae2369ad13 // indirect
 	github.com/dustin/go-humanize v1.0.0 // indirect
-	github.com/go-ap/client v0.0.0-20230323123805-a1114dc5ba4f // indirect
+	github.com/go-ap/client v0.0.0-20230509081643-66f4b336aaef // indirect
 	github.com/go-ap/jsonld v0.0.0-20221030091449-f2a191312c73 // indirect
 	github.com/go-fed/httpsig v1.1.0 // indirect
 	github.com/gogo/protobuf v1.3.2 // indirect
@@ -37,14 +37,14 @@ require (
 	github.com/mattn/go-isatty v0.0.18 // indirect
 	github.com/pborman/uuid v1.2.1 // indirect
 	github.com/pkg/errors v0.9.1 // indirect
-	github.com/rs/xid v1.4.0 // indirect
-	github.com/rs/zerolog v1.29.0 // indirect
+	github.com/rs/xid v1.5.0 // indirect
+	github.com/rs/zerolog v1.29.1 // indirect
 	github.com/stretchr/testify v1.8.1 // indirect
 	github.com/valyala/fastjson v1.6.4 // indirect
 	go.opencensus.io v0.24.0 // indirect
-	golang.org/x/net v0.8.0 // indirect
-	golang.org/x/oauth2 v0.6.0 // indirect
-	golang.org/x/sys v0.6.0 // indirect
+	golang.org/x/net v0.10.0 // indirect
+	golang.org/x/oauth2 v0.8.0 // indirect
+	golang.org/x/sys v0.8.0 // indirect
 	google.golang.org/appengine v1.6.7 // indirect
 	google.golang.org/protobuf v1.30.0 // indirect
 )
