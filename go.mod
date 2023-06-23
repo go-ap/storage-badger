@@ -4,12 +4,12 @@ go 1.18
 
 require (
 	github.com/dgraph-io/badger/v3 v3.2103.5
-	github.com/go-ap/activitypub v0.0.0-20230514141345-45936cc2f768
+	github.com/go-ap/activitypub v0.0.0-20230623140027-da408bbcc578
 	github.com/go-ap/errors v0.0.0-20221205040414-01c1adfc98ea
-	github.com/go-ap/filters v0.0.0-20230611142751-c49e8b41faef
-	github.com/go-ap/processing v0.0.0-20230611142403-7b8178f496f9
+	github.com/go-ap/filters v0.0.0-20230623142330-e72de5cd7aee
+	github.com/go-ap/processing v0.0.0-20230623142209-5caf9281ae62
 	github.com/openshift/osin v1.0.1
-	golang.org/x/crypto v0.9.0
+	golang.org/x/crypto v0.10.0
 )
 
 require (
@@ -20,7 +20,7 @@ require (
 	github.com/dgraph-io/ristretto v0.1.1 // indirect
 	github.com/dgryski/go-farm v0.0.0-20200201041132-a6ae2369ad13 // indirect
 	github.com/dustin/go-humanize v1.0.0 // indirect
-	github.com/go-ap/client v0.0.0-20230514142616-d54d23930714 // indirect
+	github.com/go-ap/client v0.0.0-20230623140942-8775194a9f6a // indirect
 	github.com/go-ap/jsonld v0.0.0-20221030091449-f2a191312c73 // indirect
 	github.com/go-fed/httpsig v1.1.0 // indirect
 	github.com/gogo/protobuf v1.3.2 // indirect
@@ -42,9 +42,9 @@ require (
 	github.com/stretchr/testify v1.8.1 // indirect
 	github.com/valyala/fastjson v1.6.4 // indirect
 	go.opencensus.io v0.24.0 // indirect
-	golang.org/x/net v0.10.0 // indirect
-	golang.org/x/oauth2 v0.8.0 // indirect
-	golang.org/x/sys v0.8.0 // indirect
+	golang.org/x/net v0.11.0 // indirect
+	golang.org/x/oauth2 v0.9.0 // indirect
+	golang.org/x/sys v0.9.0 // indirect
 	google.golang.org/appengine v1.6.7 // indirect
 	google.golang.org/protobuf v1.30.0 // indirect
 )
