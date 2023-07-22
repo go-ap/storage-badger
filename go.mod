@@ -4,12 +4,12 @@ go 1.18
 
 require (
 	github.com/dgraph-io/badger/v3 v3.2103.5
-	github.com/go-ap/activitypub v0.0.0-20230626173101-16e4163853e3
+	github.com/go-ap/activitypub v0.0.0-20230719093539-2b6a6f3a25ee
 	github.com/go-ap/errors v0.0.0-20221205040414-01c1adfc98ea
-	github.com/go-ap/filters v0.0.0-20230704143345-2c226b6796c3
-	github.com/go-ap/processing v0.0.0-20230704143302-2f703964bf38
+	github.com/go-ap/filters v0.0.0-20230722082550-7a514f680c7a
+	github.com/go-ap/processing v0.0.0-20230719093825-2cf84c8f55ff
 	github.com/openshift/osin v1.0.1
-	golang.org/x/crypto v0.10.0
+	golang.org/x/crypto v0.11.0
 )
 
 require (
@@ -20,7 +20,7 @@ require (
 	github.com/dgraph-io/ristretto v0.1.1 // indirect
 	github.com/dgryski/go-farm v0.0.0-20200201041132-a6ae2369ad13 // indirect
 	github.com/dustin/go-humanize v1.0.0 // indirect
-	github.com/go-ap/client v0.0.0-20230626173150-f30f1cc74140 // indirect
+	github.com/go-ap/client v0.0.0-20230719093625-24a71df51b10 // indirect
 	github.com/go-ap/jsonld v0.0.0-20221030091449-f2a191312c73 // indirect
 	github.com/go-fed/httpsig v1.1.0 // indirect
 	github.com/gogo/protobuf v1.3.2 // indirect
@@ -29,7 +29,6 @@ require (
 	github.com/golang/protobuf v1.5.3 // indirect
 	github.com/golang/snappy v0.0.4 // indirect
 	github.com/google/flatbuffers v22.11.23+incompatible // indirect
-	github.com/google/go-cmp v0.5.9 // indirect
 	github.com/google/uuid v1.3.0 // indirect
 	github.com/klauspost/compress v1.15.13 // indirect
 	github.com/mariusor/qstring v0.0.0-20200204164351-5a99d46de39d // indirect
@@ -42,9 +41,9 @@ require (
 	github.com/stretchr/testify v1.8.1 // indirect
 	github.com/valyala/fastjson v1.6.4 // indirect
 	go.opencensus.io v0.24.0 // indirect
-	golang.org/x/net v0.11.0 // indirect
-	golang.org/x/oauth2 v0.9.0 // indirect
-	golang.org/x/sys v0.9.0 // indirect
+	golang.org/x/net v0.12.0 // indirect
+	golang.org/x/oauth2 v0.10.0 // indirect
+	golang.org/x/sys v0.10.0 // indirect
 	google.golang.org/appengine v1.6.7 // indirect
 	google.golang.org/protobuf v1.31.0 // indirect
 )
