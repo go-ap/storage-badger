@@ -4,10 +4,10 @@ go 1.18
 
 require (
 	github.com/dgraph-io/badger/v3 v3.2103.5
-	github.com/go-ap/activitypub v0.0.0-20230729190052-737f716a1548
+	github.com/go-ap/activitypub v0.0.0-20230730144252-88f76b2af358
 	github.com/go-ap/errors v0.0.0-20221205040414-01c1adfc98ea
-	github.com/go-ap/filters v0.0.0-20230729190404-fa719ca22b06
-	github.com/go-ap/processing v0.0.0-20230729190334-86403f9f3102
+	github.com/go-ap/filters v0.0.0-20230730144750-aacdd7be149b
+	github.com/go-ap/processing v0.0.0-20230730144722-0ae13a5ff5f5
 	github.com/openshift/osin v1.0.1
 	golang.org/x/crypto v0.11.0
 )
@@ -20,7 +20,7 @@ require (
 	github.com/dgraph-io/ristretto v0.1.1 // indirect
 	github.com/dgryski/go-farm v0.0.0-20200201041132-a6ae2369ad13 // indirect
 	github.com/dustin/go-humanize v1.0.0 // indirect
-	github.com/go-ap/client v0.0.0-20230729190142-0973061e567a // indirect
+	github.com/go-ap/client v0.0.0-20230730144342-64d59bd2e88c // indirect
 	github.com/go-ap/jsonld v0.0.0-20221030091449-f2a191312c73 // indirect
 	github.com/go-fed/httpsig v1.1.0 // indirect
 	github.com/gogo/protobuf v1.3.2 // indirect
@@ -37,7 +37,7 @@ require (
 	github.com/pborman/uuid v1.2.1 // indirect
 	github.com/pkg/errors v0.9.1 // indirect
 	github.com/rs/xid v1.5.0 // indirect
-	github.com/rs/zerolog v1.29.1 // indirect
+	github.com/rs/zerolog v1.30.0 // indirect
 	github.com/stretchr/testify v1.8.1 // indirect
 	github.com/valyala/fastjson v1.6.4 // indirect
 	go.opencensus.io v0.24.0 // indirect
