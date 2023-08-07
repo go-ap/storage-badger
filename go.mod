@@ -4,10 +4,10 @@ go 1.18
 
 require (
 	github.com/dgraph-io/badger/v3 v3.2103.5
-	github.com/go-ap/activitypub v0.0.0-20230730144252-88f76b2af358
+	github.com/go-ap/activitypub v0.0.0-20230807182453-602f717f6ca3
 	github.com/go-ap/errors v0.0.0-20221205040414-01c1adfc98ea
-	github.com/go-ap/filters v0.0.0-20230807085049-c8598c7a4c93
-	github.com/go-ap/processing v0.0.0-20230730144722-0ae13a5ff5f5
+	github.com/go-ap/filters v0.0.0-20230807182924-c71be7fd5d98
+	github.com/go-ap/processing v0.0.0-20230807182903-ede2ed5d7744
 	github.com/openshift/osin v1.0.1
 	golang.org/x/crypto v0.12.0
 )
@@ -20,7 +20,7 @@ require (
 	github.com/dgraph-io/ristretto v0.1.1 // indirect
 	github.com/dgryski/go-farm v0.0.0-20200201041132-a6ae2369ad13 // indirect
 	github.com/dustin/go-humanize v1.0.0 // indirect
-	github.com/go-ap/client v0.0.0-20230730144342-64d59bd2e88c // indirect
+	github.com/go-ap/client v0.0.0-20230807182802-7a0eddf496da // indirect
 	github.com/go-ap/jsonld v0.0.0-20221030091449-f2a191312c73 // indirect
 	github.com/go-fed/httpsig v1.1.0 // indirect
 	github.com/gogo/protobuf v1.3.2 // indirect
