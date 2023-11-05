@@ -95,7 +95,7 @@ func (r *repo) close() error {
 }
 
 // Load
-func (r *repo) Load(i vocab.IRI, _ ...filters.Fn) (vocab.Item, error) {
+func (r *repo) Load(i vocab.IRI, _ ...filters.Check) (vocab.Item, error) {
 	var err error
 	if r.Open(); err != nil {
 		return nil, err

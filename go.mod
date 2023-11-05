@@ -6,8 +6,8 @@ require (
 	github.com/dgraph-io/badger/v4 v4.2.0
 	github.com/go-ap/activitypub v0.0.0-20231030184441-9f208f3d7c66
 	github.com/go-ap/errors v0.0.0-20231003111023-183eef4b31b7
-	github.com/go-ap/filters v0.0.0-20231103210231-984efe274c53
-	github.com/go-ap/processing v0.0.0-20231031181732-4319277d9b5b
+	github.com/go-ap/filters v0.0.0-20231105084224-df116de075f4
+	github.com/go-ap/processing v0.0.0-20231105085942-65232cabac02
 	github.com/openshift/osin v1.0.1
 	golang.org/x/crypto v0.14.0
 )
@@ -42,8 +42,8 @@ require (
 	go.opencensus.io v0.24.0 // indirect
 	golang.org/x/net v0.16.0 // indirect
 	golang.org/x/oauth2 v0.13.0 // indirect
-	golang.org/x/sys v0.13.0 // indirect
-	golang.org/x/text v0.13.0 // indirect
+	golang.org/x/sys v0.14.0 // indirect
+	golang.org/x/text v0.14.0 // indirect
 	google.golang.org/appengine v1.6.8 // indirect
 	google.golang.org/protobuf v1.31.0 // indirect
 )
