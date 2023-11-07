@@ -6,8 +6,8 @@ require (
 	github.com/dgraph-io/badger/v4 v4.2.0
 	github.com/go-ap/activitypub v0.0.0-20231105151936-af32623a589b
 	github.com/go-ap/errors v0.0.0-20231003111023-183eef4b31b7
-	github.com/go-ap/filters v0.0.0-20231107090749-e8cac1c07384
-	github.com/go-ap/processing v0.0.0-20231107091158-83e4e3c5af69
+	github.com/go-ap/filters v0.0.0-20231107100328-0a335743a86e
+	github.com/go-ap/processing v0.0.0-20231107100457-fbddc8771780
 	github.com/openshift/osin v1.0.1
 	golang.org/x/crypto v0.14.0
 )
