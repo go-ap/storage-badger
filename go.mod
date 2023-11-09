@@ -7,9 +7,9 @@ require (
 	github.com/go-ap/activitypub v0.0.0-20231105151936-af32623a589b
 	github.com/go-ap/errors v0.0.0-20231003111023-183eef4b31b7
 	github.com/go-ap/filters v0.0.0-20231107130326-22dda75c2686
-	github.com/go-ap/processing v0.0.0-20231107131550-c149686af441
+	github.com/go-ap/processing v0.0.0-20231109160655-60ddaae159d3
 	github.com/openshift/osin v1.0.1
-	golang.org/x/crypto v0.14.0
+	golang.org/x/crypto v0.15.0
 )
 
 require (
@@ -40,8 +40,8 @@ require (
 	github.com/stretchr/testify v1.8.1 // indirect
 	github.com/valyala/fastjson v1.6.4 // indirect
 	go.opencensus.io v0.24.0 // indirect
-	golang.org/x/net v0.16.0 // indirect
-	golang.org/x/oauth2 v0.13.0 // indirect
+	golang.org/x/net v0.18.0 // indirect
+	golang.org/x/oauth2 v0.14.0 // indirect
 	golang.org/x/sys v0.14.0 // indirect
 	golang.org/x/text v0.14.0 // indirect
 	google.golang.org/appengine v1.6.8 // indirect
