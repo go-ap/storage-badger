@@ -162,8 +162,7 @@ func (r *repo) UpdateClient(c osin.Client) error {
 	if interfaceIsNil(c) {
 		return nil
 	}
-	err := r.Open()
-	if err != nil {
+	if err := r.Open(); err != nil {
 		return errors.Annotatef(err, "Unable to open badger store")
 	}
 	defer r.Close()
@@ -177,9 +176,7 @@ func (r *repo) UpdateClient(c osin.Client) error {
 	if err != nil {
 		return errors.Annotatef(err, "Unable to marshal client object")
 	}
-	return r.d.Update(func(tx *badger.Txn) error {
-		return tx.Set(r.clientPath(c.GetId()), raw)
-	})
+	return r.d.NewWriteBatch().Set(r.clientPath(c.GetId()), raw)
 }
 
 // CreateClient stores the client in the database and returns an error, if something went wrong.
@@ -194,9 +191,7 @@ func (r *repo) RemoveClient(id string) error {
 		return errors.Annotatef(err, "Unable to open badger store")
 	}
 	defer r.Close()
-	return r.d.Update(func(tx *badger.Txn) error {
-		return tx.Delete(r.clientPath(id))
-	})
+	return r.d.NewWriteBatch().Delete(r.clientPath(id))
 }
 
 func (r *repo) authorizePath(code string) []byte {
@@ -225,9 +220,7 @@ func (r *repo) SaveAuthorize(data *osin.AuthorizeData) error {
 	if err != nil {
 		return errors.Annotatef(err, "Unable to marshal authorization object")
 	}
-	return r.d.Update(func(tx *badger.Txn) error {
-		return tx.Set(r.authorizePath(data.Code), raw)
-	})
+	return r.d.NewWriteBatch().Set(r.authorizePath(data.Code), raw)
 }
 
 func (r *repo) loadTxnAuthorize(a *osin.AuthorizeData, code string) func(tx *badger.Txn) error {
@@ -237,7 +230,17 @@ func (r *repo) loadTxnAuthorize(a *osin.AuthorizeData, code string) func(tx *bad
 		if err != nil {
 			return errors.NotFoundf("Invalid path %s", fullPath)
 		}
-		return it.Value(loadRawAuthorize(a))
+		if err := it.Value(loadRawAuthorize(a)); err != nil {
+			return err
+		}
+		if a.Client == nil {
+			client := new(osin.DefaultClient)
+			if err := r.loadTxnClient(client, a.Client.GetId())(tx); err != nil {
+				return err
+			}
+			a.Client = client
+		}
+		return nil
 	}
 }
 
@@ -281,10 +284,6 @@ func (r *repo) LoadAuthorize(code string) (*osin.AuthorizeData, error) {
 		return nil, err
 	}
 	if data.Client != nil {
-		client := new(osin.DefaultClient)
-		if err = r.d.View(r.loadTxnClient(client, data.Client.GetId())); err == nil {
-			data.Client = client
-		}
 	}
 	return &data, err
 }
@@ -329,14 +328,13 @@ func (r *repo) SaveAccess(data *osin.AccessData) error {
 		return err
 	}
 
+	db := r.d.NewWriteBatch()
 	if data.RefreshToken != "" {
-		r.d.Update(func(tx *badger.Txn) error {
-			if err := r.saveRefresh(tx, data.RefreshToken, data.AccessToken); err != nil {
-				r.errFn("Failed saving refresh token for client id %s: %+s", data.Client.GetId(), err)
-				return err
-			}
-			return nil
-		})
+		if err := r.saveRefresh(db, data.RefreshToken, data.AccessToken); err != nil {
+			r.errFn("Failed saving refresh token for client id %s: %+s", data.Client.GetId(), err)
+			return err
+		}
+		return nil
 	}
 
 	if data.Client == nil {
@@ -359,9 +357,7 @@ func (r *repo) SaveAccess(data *osin.AccessData) error {
 	if err != nil {
 		return errors.Annotatef(err, "Unable to marshal access object")
 	}
-	return r.d.Update(func(tx *badger.Txn) error {
-		return tx.Set(r.accessPath(acc.AccessToken), raw)
-	})
+	return db.Set(r.accessPath(acc.AccessToken), raw)
 }
 
 func loadRawAccess(a *osin.AccessData) func(raw []byte) error {
@@ -441,9 +437,7 @@ func (r *repo) RemoveAccess(token string) error {
 		return errors.Annotatef(err, "Unable to open badger store")
 	}
 	defer r.Close()
-	return r.d.Update(func(tx *badger.Txn) error {
-		return tx.Delete(r.accessPath(token))
-	})
+	return r.d.NewWriteBatch().Delete(r.accessPath(token))
 }
 
 func (r *repo) refreshPath(refresh string) []byte {
@@ -465,12 +459,10 @@ func (r *repo) RemoveRefresh(token string) error {
 		return errors.Annotatef(err, "Unable to open badger store")
 	}
 	defer r.Close()
-	return r.d.Update(func(tx *badger.Txn) error {
-		return tx.Delete(r.refreshPath(token))
-	})
+	return r.d.NewWriteBatch().Delete(r.refreshPath(token))
 }
 
-func (r *repo) saveRefresh(txn *badger.Txn, refresh, access string) (err error) {
+func (r *repo) saveRefresh(txn *badger.WriteBatch, refresh, access string) (err error) {
 	ref := ref{
 		Access: access,
 	}

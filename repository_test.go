@@ -3,6 +3,7 @@ package badger
 import (
 	"fmt"
 	"testing"
+	"time"
 
 	"github.com/dgraph-io/badger/v4"
 	vocab "github.com/go-ap/activitypub"
@@ -28,6 +29,12 @@ func initBadgerForTesting(t *testing.T) (*repo, error) {
 
 	t.Logf("Initialized test db at %s", r.path)
 	return r, nil
+}
+
+func orderedCollection(iri vocab.IRI) vocab.CollectionInterface {
+	col := vocab.OrderedCollectionNew(iri)
+	col.Published = time.Now().UTC().Truncate(time.Second)
+	return col
 }
 
 func Test_repo_AddTo(t *testing.T) {
@@ -72,9 +79,12 @@ func Test_repo_AddTo(t *testing.T) {
 				t.Errorf("Unable to initialize boltdb: %s", err)
 			}
 
+			if _, err = r.Create(orderedCollection(tt.args.col)); err != nil {
+				t.Errorf("unable to create collection %s: %s", tt.args.it, err)
+			}
 			for _, it := range tt.args.it {
-				toCheck := vocab.Object{ID: it.GetLink()}
-				if _, err = r.Save(toCheck); err != nil {
+				mock := vocab.Object{ID: it.GetLink()}
+				if _, err = r.Save(mock); err != nil {
 					t.Errorf("unable to save %s: %s", tt.args.it, err)
 				}
 

@@ -6,7 +6,7 @@ require (
 	github.com/dgraph-io/badger/v4 v4.2.0
 	github.com/go-ap/activitypub v0.0.0-20240211124657-820024a66b78
 	github.com/go-ap/errors v0.0.0-20231003111023-183eef4b31b7
-	github.com/go-ap/filters v0.0.0-20240211125015-2de118fbc889
+	github.com/go-ap/filters v0.0.0-20240219215202-3bb92c250e29
 	github.com/go-ap/processing v0.0.0-20240219170415-0288cef1f678
 	github.com/openshift/osin v1.0.1
 	golang.org/x/crypto v0.19.0
@@ -23,13 +23,13 @@ require (
 	github.com/go-ap/jsonld v0.0.0-20221030091449-f2a191312c73 // indirect
 	github.com/go-fed/httpsig v1.1.0 // indirect
 	github.com/gogo/protobuf v1.3.2 // indirect
-	github.com/golang/glog v1.1.2 // indirect
+	github.com/golang/glog v1.2.0 // indirect
 	github.com/golang/groupcache v0.0.0-20210331224755-41bb18bfe9da // indirect
 	github.com/golang/protobuf v1.5.3 // indirect
 	github.com/golang/snappy v0.0.4 // indirect
 	github.com/google/flatbuffers v23.5.26+incompatible // indirect
 	github.com/google/uuid v1.6.0 // indirect
-	github.com/klauspost/compress v1.17.0 // indirect
+	github.com/klauspost/compress v1.17.7 // indirect
 	github.com/mariusor/qstring v0.0.0-20200204164351-5a99d46de39d // indirect
 	github.com/mattn/go-colorable v0.1.13 // indirect
 	github.com/mattn/go-isatty v0.0.20 // indirect

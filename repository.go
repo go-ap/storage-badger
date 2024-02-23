@@ -122,10 +122,7 @@ func (r *repo) Create(col vocab.CollectionInterface) (vocab.CollectionInterface,
 	}
 	defer r.Close()
 
-	err = r.d.Update(func(tx *badger.Txn) error {
-		_, err := createCollectionInPath(tx, col.GetLink())
-		return err
-	})
+	_, err = createCollectionInPath(r.d.NewWriteBatch(), col.GetLink())
 	return col, err
 }
 
@@ -222,9 +219,9 @@ func addCollectionOnObject(r *repo, col vocab.IRI) error {
 	allStorageCollections := append(vocab.ActivityPubCollections, filters.FedBOXCollections...)
 	if ob, t := allStorageCollections.Split(col); vocab.ValidCollection(t) {
 		// Create the collection on the object, if it doesn't exist
-		if i, _ := r.LoadOne(ob); i != nil {
+		if i, _ := r.loadOneFromPath(ob); i != nil {
 			if _, ok := t.AddTo(i); ok {
-				_, err := r.Save(i)
+				_, err := save(r, i)
 				return err
 			}
 		}
@@ -406,13 +403,12 @@ func delete(r *repo, it vocab.Item) error {
 		return err
 	}
 
-	return r.d.Update(func(tx *badger.Txn) error {
-		return deleteFromPath(r, tx, old)
-	})
+	db := r.d.NewWriteBatch()
+	return deleteFromPath(r, db, old)
 }
 
 // createCollections
-func createCollections(tx *badger.Txn, it vocab.Item) error {
+func createCollections(tx *badger.WriteBatch, it vocab.Item) error {
 	if vocab.IsNil(it) || !it.IsObject() {
 		return nil
 	}
@@ -452,56 +448,53 @@ func createCollections(tx *badger.Txn, it vocab.Item) error {
 
 // deleteCollections
 func deleteCollections(r *repo, it vocab.Item) error {
-	return r.d.Update(func(tx *badger.Txn) error {
-		if vocab.ActorTypes.Contains(it.GetType()) {
-			return vocab.OnActor(it, func(p *vocab.Actor) error {
-				var err error
-				err = deleteFromPath(r, tx, vocab.Inbox.IRI(p))
-				err = deleteFromPath(r, tx, vocab.Outbox.IRI(p))
-				err = deleteFromPath(r, tx, vocab.Followers.IRI(p))
-				err = deleteFromPath(r, tx, vocab.Following.IRI(p))
-				err = deleteFromPath(r, tx, vocab.Liked.IRI(p))
-				return err
-			})
-		}
-		if vocab.ObjectTypes.Contains(it.GetType()) {
-			return vocab.OnObject(it, func(o *vocab.Object) error {
-				var err error
-				err = deleteFromPath(r, tx, vocab.Replies.IRI(o))
-				err = deleteFromPath(r, tx, vocab.Likes.IRI(o))
-				err = deleteFromPath(r, tx, vocab.Shares.IRI(o))
-				return err
-			})
-		}
-		return nil
-	})
+	tx := r.d.NewWriteBatch()
+	if vocab.ActorTypes.Contains(it.GetType()) {
+		return vocab.OnActor(it, func(p *vocab.Actor) error {
+			var err error
+			err = deleteFromPath(r, tx, vocab.Inbox.IRI(p))
+			err = deleteFromPath(r, tx, vocab.Outbox.IRI(p))
+			err = deleteFromPath(r, tx, vocab.Followers.IRI(p))
+			err = deleteFromPath(r, tx, vocab.Following.IRI(p))
+			err = deleteFromPath(r, tx, vocab.Liked.IRI(p))
+			return err
+		})
+	}
+	if vocab.ObjectTypes.Contains(it.GetType()) {
+		return vocab.OnObject(it, func(o *vocab.Object) error {
+			var err error
+			err = deleteFromPath(r, tx, vocab.Replies.IRI(o))
+			err = deleteFromPath(r, tx, vocab.Likes.IRI(o))
+			err = deleteFromPath(r, tx, vocab.Shares.IRI(o))
+			return err
+		})
+	}
+	return nil
 }
 
 func save(r *repo, it vocab.Item) (vocab.Item, error) {
 	itPath := itemPath(it.GetLink())
-	err := r.d.Update(func(tx *badger.Txn) error {
-		if err := createCollections(tx, it); err != nil {
-			return errors.Annotatef(err, "could not create object's collections")
-		}
-		entryBytes, err := encodeItemFn(it)
-		if err != nil {
-			return errors.Annotatef(err, "could not marshal object")
-		}
-		k := getObjectKey(itPath)
-		err = tx.Set(k, entryBytes)
-		if err != nil {
-			return errors.Annotatef(err, "could not store encoded object")
-		}
+	db := r.d.NewWriteBatch()
 
-		return nil
-	})
+	if err := createCollections(db, it); err != nil {
+		return nil, errors.Annotatef(err, "could not create object's collections")
+	}
+	entryBytes, err := encodeItemFn(it)
+	if err != nil {
+		return nil, errors.Annotatef(err, "could not marshal object")
+	}
+	k := getObjectKey(itPath)
+	err = db.Set(k, entryBytes)
+	if err != nil {
+		return nil, errors.Annotatef(err, "could not store encoded object")
+	}
 
 	return it, err
 }
 
 var emptyCollection, _ = encodeItemFn(vocab.IRIs{})
 
-func createCollectionInPath(b *badger.Txn, it vocab.Item) (vocab.Item, error) {
+func createCollectionInPath(b *badger.WriteBatch, it vocab.Item) (vocab.Item, error) {
 	if vocab.IsNil(it) {
 		return nil, nil
 	}
@@ -513,7 +506,7 @@ func createCollectionInPath(b *badger.Txn, it vocab.Item) (vocab.Item, error) {
 	return it.GetLink(), nil
 }
 
-func deleteFromPath(r *repo, b *badger.Txn, it vocab.Item) error {
+func deleteFromPath(r *repo, b *badger.WriteBatch, it vocab.Item) error {
 	if vocab.IsNil(it) {
 		return nil
 	}
