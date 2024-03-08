@@ -7,7 +7,7 @@ require (
 	github.com/go-ap/activitypub v0.0.0-20240304122919-ef7a45e2d04a
 	github.com/go-ap/errors v0.0.0-20240304112515-6077fa9c17b0
 	github.com/go-ap/filters v0.0.0-20240308123440-369d4a67f42d
-	github.com/go-ap/processing v0.0.0-20240308123728-8c00bd3dda9d
+	github.com/go-ap/processing v0.0.0-20240308130546-81e459b25741
 	github.com/openshift/osin v1.0.1
 	golang.org/x/crypto v0.21.0
 )
@@ -27,7 +27,7 @@ require (
 	github.com/golang/groupcache v0.0.0-20210331224755-41bb18bfe9da // indirect
 	github.com/golang/protobuf v1.5.4 // indirect
 	github.com/golang/snappy v0.0.4 // indirect
-	github.com/google/flatbuffers v23.5.26+incompatible // indirect
+	github.com/google/flatbuffers v24.3.7+incompatible // indirect
 	github.com/google/uuid v1.6.0 // indirect
 	github.com/klauspost/compress v1.17.7 // indirect
 	github.com/mariusor/qstring v0.0.0-20200204164351-5a99d46de39d // indirect
