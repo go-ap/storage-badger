@@ -4,22 +4,22 @@ go 1.18
 
 require (
 	github.com/dgraph-io/badger/v4 v4.2.0
-	github.com/go-ap/activitypub v0.0.0-20240311125533-442f6c0264c8
+	github.com/go-ap/activitypub v0.0.0-20240316125321-b61fd6a83225
 	github.com/go-ap/errors v0.0.0-20240304112515-6077fa9c17b0
-	github.com/go-ap/filters v0.0.0-20240311125828-f87c4ad6e6ad
-	github.com/go-ap/processing v0.0.0-20240311130100-7babfbaac752
+	github.com/go-ap/filters v0.0.0-20240316125508-d5134f486493
+	github.com/go-ap/processing v0.0.0-20240316125704-2730f8d595ea
 	github.com/openshift/osin v1.0.1
 	golang.org/x/crypto v0.21.0
 )
 
 require (
 	git.sr.ht/~mariusor/go-xsd-duration v0.0.0-20220703122237-02e73435a078 // indirect
-	git.sr.ht/~mariusor/lw v0.0.0-20240310135138-67bdb0a4f8db // indirect
+	git.sr.ht/~mariusor/lw v0.0.0-20240313142800-531789c76b6d // indirect
 	github.com/cespare/xxhash/v2 v2.2.0 // indirect
 	github.com/dgraph-io/ristretto v0.1.1 // indirect
 	github.com/dgryski/go-farm v0.0.0-20200201041132-a6ae2369ad13 // indirect
 	github.com/dustin/go-humanize v1.0.1 // indirect
-	github.com/go-ap/client v0.0.0-20240311125901-a74d64acf456 // indirect
+	github.com/go-ap/client v0.0.0-20240316125535-27e8db2c2547 // indirect
 	github.com/go-ap/jsonld v0.0.0-20221030091449-f2a191312c73 // indirect
 	github.com/go-chi/chi/v5 v5.0.12 // indirect
 	github.com/go-fed/httpsig v1.1.0 // indirect
