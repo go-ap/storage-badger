@@ -3,11 +3,11 @@ module github.com/go-ap/storage-badger
 go 1.23
 
 require (
-	github.com/dgraph-io/badger/v4 v4.3.1
+	github.com/dgraph-io/badger/v4 v4.4.0
 	github.com/go-ap/activitypub v0.0.0-20241104140659-be99a725f9d5
 	github.com/go-ap/errors v0.0.0-20240910140019-1e9d33cc1568
-	github.com/go-ap/filters v0.0.0-20241110174345-2802456d0c02
-	github.com/go-ap/processing v0.0.0-20241110174821-a01379c6c51b
+	github.com/go-ap/filters v0.0.0-20241113114250-f8877ed7ec0e
+	github.com/go-ap/processing v0.0.0-20241113114521-c5fe64952ff0
 	github.com/openshift/osin v1.0.2-0.20220317075346-0f4d38c6e53f
 	golang.org/x/crypto v0.29.0
 )
@@ -20,7 +20,7 @@ require (
 	github.com/RoaringBitmap/roaring v1.9.4 // indirect
 	github.com/bits-and-blooms/bitset v1.15.0 // indirect
 	github.com/cespare/xxhash/v2 v2.3.0 // indirect
-	github.com/dgraph-io/ristretto v1.0.0 // indirect
+	github.com/dgraph-io/ristretto/v2 v2.0.0 // indirect
 	github.com/dustin/go-humanize v1.0.1 // indirect
 	github.com/go-ap/client v0.0.0-20241104140838-929b90e84e8a // indirect
 	github.com/go-ap/jsonld v0.0.0-20221030091449-f2a191312c73 // indirect
