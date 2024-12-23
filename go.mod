@@ -6,7 +6,7 @@ require (
 	github.com/dgraph-io/badger/v4 v4.5.0
 	github.com/go-ap/activitypub v0.0.0-20241212161521-36eb87cc3381
 	github.com/go-ap/errors v0.0.0-20241212155021-5a598b6bf467
-	github.com/go-ap/filters v0.0.0-20241212161731-6700826ce543
+	github.com/go-ap/filters v0.0.0-20241223151848-0aad921dae0d
 	github.com/go-ap/processing v0.0.0-20241216191157-a7d3ba1f9663
 	github.com/openshift/osin v1.0.2-0.20220317075346-0f4d38c6e53f
 	golang.org/x/crypto v0.31.0
@@ -17,9 +17,9 @@ require (
 	git.sr.ht/~mariusor/go-xsd-duration v0.0.0-20220703122237-02e73435a078 // indirect
 	git.sr.ht/~mariusor/lw v0.0.0-20241117105956-4b4009e28502 // indirect
 	git.sr.ht/~mariusor/mask v0.0.0-20240327084502-ef2a9438457e // indirect
-	git.sr.ht/~mariusor/ssm v0.0.0-20240811085540-34f24cac52b7 // indirect
+	git.sr.ht/~mariusor/ssm v0.0.0-20241220163816-32d18afe7b22 // indirect
 	github.com/RoaringBitmap/roaring v1.9.4 // indirect
-	github.com/bits-and-blooms/bitset v1.19.1 // indirect
+	github.com/bits-and-blooms/bitset v1.20.0 // indirect
 	github.com/cespare/xxhash/v2 v2.3.0 // indirect
 	github.com/dgraph-io/ristretto/v2 v2.0.1 // indirect
 	github.com/dustin/go-humanize v1.0.1 // indirect
@@ -43,11 +43,11 @@ require (
 	github.com/spaolacci/murmur3 v1.1.0 // indirect
 	github.com/valyala/fastjson v1.6.4 // indirect
 	go.opencensus.io v0.24.0 // indirect
-	golang.org/x/net v0.32.0 // indirect
+	golang.org/x/net v0.33.0 // indirect
 	golang.org/x/oauth2 v0.24.0 // indirect
 	golang.org/x/sys v0.28.0 // indirect
 	golang.org/x/text v0.21.0 // indirect
-	google.golang.org/protobuf v1.36.0 // indirect
+	google.golang.org/protobuf v1.36.1 // indirect
 	gopkg.in/neurosnap/sentences.v1 v1.0.7 // indirect
 )
 
