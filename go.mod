@@ -4,10 +4,10 @@ go 1.23
 
 require (
 	github.com/dgraph-io/badger/v4 v4.5.0
-	github.com/go-ap/activitypub v0.0.0-20241212161521-36eb87cc3381
+	github.com/go-ap/activitypub v0.0.0-20241225170553-7b54e5d173d2
 	github.com/go-ap/errors v0.0.0-20241212155021-5a598b6bf467
-	github.com/go-ap/filters v0.0.0-20241223151848-0aad921dae0d
-	github.com/go-ap/processing v0.0.0-20241216191157-a7d3ba1f9663
+	github.com/go-ap/filters v0.0.0-20241227104745-0816c594124e
+	github.com/go-ap/processing v0.0.0-20241227104926-d3118b106ad0
 	github.com/openshift/osin v1.0.2-0.20220317075346-0f4d38c6e53f
 	golang.org/x/crypto v0.31.0
 )
@@ -23,12 +23,12 @@ require (
 	github.com/cespare/xxhash/v2 v2.3.0 // indirect
 	github.com/dgraph-io/ristretto/v2 v2.0.1 // indirect
 	github.com/dustin/go-humanize v1.0.1 // indirect
-	github.com/go-ap/client v0.0.0-20241212174032-4826270ad6a3 // indirect
+	github.com/go-ap/client v0.0.0-20241227104818-3a1bb70ff1a1 // indirect
 	github.com/go-ap/jsonld v0.0.0-20221030091449-f2a191312c73 // indirect
 	github.com/go-chi/chi/v5 v5.2.0 // indirect
 	github.com/go-fed/httpsig v1.1.0 // indirect
 	github.com/golang/groupcache v0.0.0-20241129210726-2c02b8208cf8 // indirect
-	github.com/google/flatbuffers v24.3.25+incompatible // indirect
+	github.com/google/flatbuffers v24.12.23+incompatible // indirect
 	github.com/google/uuid v1.6.0 // indirect
 	github.com/jdkato/prose v1.2.1 // indirect
 	github.com/klauspost/compress v1.17.11 // indirect
