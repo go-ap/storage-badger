@@ -4,10 +4,10 @@ go 1.23
 
 require (
 	github.com/dgraph-io/badger/v4 v4.5.1
-	github.com/go-ap/activitypub v0.0.0-20250112165501-7b898763a1e9
-	github.com/go-ap/errors v0.0.0-20241212155021-5a598b6bf467
-	github.com/go-ap/filters v0.0.0-20250122193938-87a29d4e0ed7
-	github.com/go-ap/processing v0.0.0-20250122194534-a9bc23ab5866
+	github.com/go-ap/activitypub v0.0.0-20250124194921-d52b4c694e14
+	github.com/go-ap/errors v0.0.0-20250124135319-3da8adefd4a9
+	github.com/go-ap/filters v0.0.0-20250124201430-3eab6e3d69dc
+	github.com/go-ap/processing v0.0.0-20250124211251-f8460f4f2a52
 	github.com/openshift/osin v1.0.2-0.20220317075346-0f4d38c6e53f
 	golang.org/x/crypto v0.32.0
 )
@@ -23,7 +23,7 @@ require (
 	github.com/cespare/xxhash/v2 v2.3.0 // indirect
 	github.com/dgraph-io/ristretto/v2 v2.1.0 // indirect
 	github.com/dustin/go-humanize v1.0.1 // indirect
-	github.com/go-ap/client v0.0.0-20250122170329-4328b36804af // indirect
+	github.com/go-ap/client v0.0.0-20250124203935-c85d69be5705 // indirect
 	github.com/go-ap/jsonld v0.0.0-20221030091449-f2a191312c73 // indirect
 	github.com/go-chi/chi/v5 v5.2.0 // indirect
 	github.com/go-fed/httpsig v1.1.0 // indirect
@@ -47,7 +47,7 @@ require (
 	golang.org/x/oauth2 v0.25.0 // indirect
 	golang.org/x/sys v0.29.0 // indirect
 	golang.org/x/text v0.21.0 // indirect
-	google.golang.org/protobuf v1.36.3 // indirect
+	google.golang.org/protobuf v1.36.4 // indirect
 	gopkg.in/neurosnap/sentences.v1 v1.0.7 // indirect
 )
 
