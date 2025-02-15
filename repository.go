@@ -15,12 +15,14 @@ import (
 
 	"github.com/dgraph-io/badger/v4"
 	vocab "github.com/go-ap/activitypub"
+	au "github.com/go-ap/auth"
 	"github.com/go-ap/cache"
 	"github.com/go-ap/errors"
 	"github.com/go-ap/filters"
-	"github.com/go-ap/processing"
 	"golang.org/x/crypto/bcrypt"
 )
+
+type Metadata = au.Metadata
 
 type repo struct {
 	d     *badger.DB
@@ -269,7 +271,7 @@ func (r *repo) PasswordSet(it vocab.Item, pw []byte) error {
 		if err != nil {
 			return errors.Annotatef(err, "Could not encrypt the pw")
 		}
-		m := processing.Metadata{
+		m := Metadata{
 			Pw: pw,
 		}
 		entryBytes, err := encodeFn(m)
@@ -295,7 +297,7 @@ func (r *repo) PasswordCheck(it vocab.Item, pw []byte) error {
 	}
 	defer r.Close()
 
-	m := processing.Metadata{}
+	m := Metadata{}
 	err = r.d.View(func(tx *badger.Txn) error {
 		i, err := tx.Get(getMetadataKey(path))
 		if err != nil {
@@ -317,7 +319,7 @@ func (r *repo) PasswordCheck(it vocab.Item, pw []byte) error {
 }
 
 // LoadMetadata
-func (r *repo) LoadMetadata(iri vocab.IRI) (*processing.Metadata, error) {
+func (r *repo) LoadMetadata(iri vocab.IRI) (*Metadata, error) {
 	err := r.Open()
 	if err != nil {
 		return nil, err
@@ -325,7 +327,7 @@ func (r *repo) LoadMetadata(iri vocab.IRI) (*processing.Metadata, error) {
 	defer r.Close()
 	path := itemPath(iri)
 
-	m := processing.Metadata{}
+	m := Metadata{}
 	err = r.d.View(func(tx *badger.Txn) error {
 		i, err := tx.Get(getMetadataKey(path))
 		if err != nil {
@@ -339,7 +341,7 @@ func (r *repo) LoadMetadata(iri vocab.IRI) (*processing.Metadata, error) {
 }
 
 // SaveMetadata
-func (r *repo) SaveMetadata(m processing.Metadata, iri vocab.IRI) error {
+func (r *repo) SaveMetadata(m Metadata, iri vocab.IRI) error {
 	err := r.Open()
 	if err != nil {
 		return err
