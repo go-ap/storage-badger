@@ -15,10 +15,10 @@ import (
 
 	"github.com/dgraph-io/badger/v4"
 	vocab "github.com/go-ap/activitypub"
+	"github.com/go-ap/cache"
 	"github.com/go-ap/errors"
 	"github.com/go-ap/filters"
 	"github.com/go-ap/processing"
-	"github.com/go-ap/storage-badger/internal/cache"
 	"golang.org/x/crypto/bcrypt"
 )
 
