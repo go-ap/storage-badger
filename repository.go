@@ -99,29 +99,16 @@ func (r *repo) close() error {
 
 // Load
 func (r *repo) Load(i vocab.IRI, checks ...filters.Check) (vocab.Item, error) {
-	var err error
-	if err = r.Open(); err != nil {
-		return nil, err
-	}
-	defer r.Close()
-
 	ret, err := r.loadFromPath(i, checks...)
 	return filters.Checks(checks).Run(ret), err
 }
 
 func (r *repo) Create(col vocab.CollectionInterface) (vocab.CollectionInterface, error) {
-	var err error
-	err = r.Open()
-	if err != nil {
-		return col, err
-	}
-	defer r.Close()
-
 	if vocab.IsIRI(col) {
 		return col, errors.Errorf("invalid collection to save: %s", col)
 	}
 
-	err = r.d.Update(func(txn *badger.Txn) error {
+	err := r.d.Update(func(txn *badger.Txn) error {
 		return saveRawItem(txn, col)
 	})
 	return col, err
@@ -130,11 +117,6 @@ func (r *repo) Create(col vocab.CollectionInterface) (vocab.CollectionInterface,
 // Save
 func (r *repo) Save(it vocab.Item) (vocab.Item, error) {
 	var err error
-	err = r.Open()
-	if err != nil {
-		return it, err
-	}
-	defer r.Close()
 
 	if it, err = save(r, it); err == nil {
 		op := "Updated"
@@ -160,11 +142,6 @@ func onCollection(r *repo, col vocab.IRI, it vocab.Item, fn func(iris vocab.IRIs
 	}
 	p := itemPath(col)
 
-	err := r.Open()
-	if err != nil {
-		return err
-	}
-	defer r.Close()
 	return r.d.Update(func(tx *badger.Txn) error {
 		var iris vocab.IRIs
 
@@ -232,7 +209,7 @@ func addCollectionOnObject(r *repo, col vocab.IRI) error {
 
 // AddTo
 func (r *repo) AddTo(col vocab.IRI, it vocab.Item) error {
-	addCollectionOnObject(r, col)
+	_ = addCollectionOnObject(r, col)
 	return onCollection(r, col, it, func(iris vocab.IRIs) (vocab.IRIs, error) {
 		if iris.Contains(it.GetLink()) {
 			return iris, nil
@@ -243,12 +220,6 @@ func (r *repo) AddTo(col vocab.IRI, it vocab.Item) error {
 
 // Delete
 func (r *repo) Delete(it vocab.Item) error {
-	var err error
-	err = r.Open()
-	if err != nil {
-		return err
-	}
-	defer r.Close()
 	return delete(r, it)
 }
 
@@ -259,13 +230,9 @@ func getMetadataKey(p []byte) []byte {
 // PasswordSet
 func (r *repo) PasswordSet(it vocab.Item, pw []byte) error {
 	path := itemPath(it.GetLink())
-	err := r.Open()
-	if err != nil {
-		return err
-	}
-	defer r.Close()
 
-	err = r.d.Update(func(tx *badger.Txn) error {
+	err := r.d.Update(func(tx *badger.Txn) error {
+		var err error
 		pw, err = bcrypt.GenerateFromPassword(pw, -1)
 		if err != nil {
 			return errors.Annotatef(err, "Could not encrypt the pw")
@@ -290,14 +257,9 @@ func (r *repo) PasswordSet(it vocab.Item, pw []byte) error {
 // PasswordCheck
 func (r *repo) PasswordCheck(it vocab.Item, pw []byte) error {
 	path := itemPath(it.GetLink())
-	err := r.Open()
-	if err != nil {
-		return err
-	}
-	defer r.Close()
 
 	m := Metadata{}
-	err = r.d.View(func(tx *badger.Txn) error {
+	err := r.d.View(func(tx *badger.Txn) error {
 		i, err := tx.Get(getMetadataKey(path))
 		if err != nil {
 			return errors.Annotatef(err, "Could not find metadata in path %s", path)
@@ -319,15 +281,10 @@ func (r *repo) PasswordCheck(it vocab.Item, pw []byte) error {
 
 // LoadMetadata
 func (r *repo) LoadMetadata(iri vocab.IRI) (*Metadata, error) {
-	err := r.Open()
-	if err != nil {
-		return nil, err
-	}
-	defer r.Close()
 	path := itemPath(iri)
 
 	m := Metadata{}
-	err = r.d.View(func(tx *badger.Txn) error {
+	err := r.d.View(func(tx *badger.Txn) error {
 		i, err := tx.Get(getMetadataKey(path))
 		if err != nil {
 			return errors.Annotatef(err, "Could not find metadata in path %s", path)
@@ -341,14 +298,8 @@ func (r *repo) LoadMetadata(iri vocab.IRI) (*Metadata, error) {
 
 // SaveMetadata
 func (r *repo) SaveMetadata(m Metadata, iri vocab.IRI) error {
-	err := r.Open()
-	if err != nil {
-		return err
-	}
-	defer r.Close()
-
 	path := itemPath(iri)
-	err = r.d.Update(func(tx *badger.Txn) error {
+	err := r.d.Update(func(tx *badger.Txn) error {
 		entryBytes, err := encodeFn(m)
 		if err != nil {
 			return errors.Annotatef(err, "Could not marshal metadata")
@@ -792,23 +743,6 @@ func itemPath(iri vocab.IRI) []byte {
 		return nil
 	}
 	return []byte(filepath.Join(url.Host, url.Path))
-}
-
-func (r *repo) CreateService(service *vocab.Service) error {
-	err := r.Open()
-	defer r.Close()
-	if err != nil {
-		return err
-	}
-	if it, err := save(r, service); err == nil {
-		op := "Updated"
-		id := it.GetID()
-		if !id.IsValid() {
-			op = "Added new"
-		}
-		r.logFn("%s %s: %s", op, it.GetType(), it.GetLink())
-	}
-	return err
 }
 
 func Path(c Config) (string, error) {

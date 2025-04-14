@@ -5,7 +5,6 @@ import (
 	"testing"
 	"time"
 
-	"github.com/dgraph-io/badger/v4"
 	vocab "github.com/go-ap/activitypub"
 )
 
@@ -15,16 +14,10 @@ func initBadgerForTesting(t *testing.T) (*repo, error) {
 		return nil, fmt.Errorf("invalid path for initializing boltdb %s: %s", tempDir, err)
 	}
 
-	c := badger.DefaultOptions(tempDir)
 	r := &repo{
 		path:  tempDir,
 		logFn: t.Logf,
 		errFn: t.Errorf,
-	}
-	r.d, err = badger.Open(c)
-	defer r.d.Close()
-	if err != nil {
-		return nil, fmt.Errorf("failed to open boltdb database at path %s: %s", tempDir, err)
 	}
 
 	t.Logf("Initialized test db at %s", r.path)
@@ -78,6 +71,8 @@ func Test_repo_AddTo(t *testing.T) {
 			if err != nil {
 				t.Errorf("Unable to initialize boltdb: %s", err)
 			}
+			_ = r.Open()
+			defer r.Close()
 
 			if _, err = r.Create(orderedCollection(tt.args.col)); err != nil {
 				t.Errorf("unable to create collection %s: %s", tt.args.it, err)

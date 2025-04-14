@@ -122,10 +122,7 @@ func (r *repo) GetClient(id string) (osin.Client, error) {
 	if id == "" {
 		return nil, errors.NotFoundf("Empty client id")
 	}
-	if err := r.Open(); err != nil {
-		return nil, err
-	}
-	defer r.Close()
+
 	c := new(osin.DefaultClient)
 	if err := r.d.View(r.loadTxnClient(c, id)); err != nil {
 		return nil, err
@@ -134,13 +131,8 @@ func (r *repo) GetClient(id string) (osin.Client, error) {
 }
 
 func (r *repo) ListClients() ([]osin.Client, error) {
-	err := r.Open()
-	if err != nil {
-		return nil, err
-	}
-	defer r.Close()
 	clients := make([]osin.Client, 0)
-	err = r.d.View(func(tx *badger.Txn) error {
+	err := r.d.View(func(tx *badger.Txn) error {
 		opts := badger.DefaultIteratorOptions
 		opts.Prefix = badgerItemPath(clientsBucket)
 		it := tx.NewIterator(opts)
@@ -162,10 +154,6 @@ func (r *repo) UpdateClient(c osin.Client) error {
 	if interfaceIsNil(c) {
 		return nil
 	}
-	if err := r.Open(); err != nil {
-		return errors.Annotatef(err, "Unable to open badger store")
-	}
-	defer r.Close()
 	cl := cl{
 		Id:          c.GetId(),
 		Secret:      c.GetSecret(),
@@ -186,11 +174,6 @@ func (r *repo) CreateClient(c osin.Client) error {
 
 // RemoveClient removes a client (identified by id) from the database. Returns an error if something went wrong.
 func (r *repo) RemoveClient(id string) error {
-	err := r.Open()
-	if err != nil {
-		return errors.Annotatef(err, "Unable to open badger store")
-	}
-	defer r.Close()
 	return r.d.NewWriteBatch().Delete(r.clientPath(id))
 }
 
@@ -200,12 +183,6 @@ func (r *repo) authorizePath(code string) []byte {
 
 // SaveAuthorize
 func (r *repo) SaveAuthorize(data *osin.AuthorizeData) error {
-	err := r.Open()
-	if err != nil {
-		return errors.Annotatef(err, "Unable to open badger storage")
-	}
-	defer r.Close()
-
 	auth := auth{
 		Client:      data.Client.GetId(),
 		Code:        data.Code,
@@ -273,13 +250,8 @@ func (r *repo) LoadAuthorize(code string) (*osin.AuthorizeData, error) {
 		return nil, errors.NotFoundf("Empty authorize code")
 	}
 	data := osin.AuthorizeData{}
-	err := r.Open()
-	if err != nil {
-		return nil, err
-	}
-	defer r.Close()
 
-	err = r.d.View(r.loadTxnAuthorize(&data, code))
+	err := r.d.View(r.loadTxnAuthorize(&data, code))
 	if err != nil {
 		return nil, err
 	}
@@ -290,11 +262,6 @@ func (r *repo) LoadAuthorize(code string) (*osin.AuthorizeData, error) {
 
 // RemoveAuthorize
 func (r *repo) RemoveAuthorize(code string) error {
-	err := r.Open()
-	if err != nil {
-		return errors.Annotatef(err, "Unable to open badger store")
-	}
-	defer r.Close()
 	return r.d.Update(func(tx *badger.Txn) error {
 		return tx.Delete(r.authorizePath(code))
 	})
@@ -306,11 +273,6 @@ func (r *repo) accessPath(code string) []byte {
 
 // SaveAccess
 func (r *repo) SaveAccess(data *osin.AccessData) error {
-	err := r.Open()
-	if err != nil {
-		return errors.Annotatef(err, "Unable to open badger store")
-	}
-	defer r.Close()
 	prev := ""
 	authorizeData := &osin.AuthorizeData{}
 
@@ -320,12 +282,6 @@ func (r *repo) SaveAccess(data *osin.AccessData) error {
 
 	if data.AuthorizeData != nil {
 		authorizeData = data.AuthorizeData
-	}
-
-	if err != nil {
-		err = errors.Annotatef(err, "Invalid client user-data")
-		r.errFn("Client id %s: %+s", data.Client.GetId(), err)
-		return err
 	}
 
 	db := r.d.NewWriteBatch()
@@ -397,16 +353,14 @@ func (r *repo) loadTxnAccess(a *osin.AccessData, token string) func(tx *badger.T
 // LoadAccess
 func (r *repo) LoadAccess(code string) (*osin.AccessData, error) {
 	if code == "" {
-		return nil, errors.NotFoundf("Empty access code")
+		return nil, errors.NotFoundf("empty access code")
 	}
-	err := r.Open()
-	if err != nil {
-		return nil, errors.Annotatef(err, "Unable to open badger store")
-	}
-	defer r.Close()
 
 	result := new(osin.AccessData)
-	err = r.d.View(r.loadTxnAccess(result, code))
+	err := r.d.View(r.loadTxnAccess(result, code))
+	if err != nil {
+		return nil, errors.Annotatef(err, "access code not found")
+	}
 
 	if result.Client != nil && len(result.Client.GetId()) > 0 {
 		client := new(osin.DefaultClient)
@@ -432,11 +386,6 @@ func (r *repo) LoadAccess(code string) (*osin.AccessData, error) {
 
 // RemoveAccess
 func (r *repo) RemoveAccess(token string) error {
-	err := r.Open()
-	if err != nil {
-		return errors.Annotatef(err, "Unable to open badger store")
-	}
-	defer r.Close()
 	return r.d.NewWriteBatch().Delete(r.accessPath(token))
 }
 
@@ -454,11 +403,6 @@ func (r *repo) LoadRefresh(token string) (*osin.AccessData, error) {
 
 // RemoveRefresh revokes or deletes refresh AccessData.
 func (r *repo) RemoveRefresh(token string) error {
-	err := r.Open()
-	if err != nil {
-		return errors.Annotatef(err, "Unable to open badger store")
-	}
-	defer r.Close()
 	return r.d.NewWriteBatch().Delete(r.refreshPath(token))
 }
 
