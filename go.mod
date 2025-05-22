@@ -5,12 +5,12 @@ go 1.23.0
 require (
 	github.com/dgraph-io/badger/v4 v4.7.0
 	github.com/go-ap/activitypub v0.0.0-20250501090939-71edba4a7137
-	github.com/go-ap/auth v0.0.0-20250501100000-44e4c972966d
+	github.com/go-ap/auth v0.0.0-20250522152812-242d2726d631
 	github.com/go-ap/cache v0.0.0-20250501092828-99a2a24bfbfe
 	github.com/go-ap/errors v0.0.0-20250501090840-cd50c6a0a4e6
 	github.com/go-ap/filters v0.0.0-20250501095843-df5e7d7967ec
 	github.com/openshift/osin v1.0.2-0.20220317075346-0f4d38c6e53f
-	golang.org/x/crypto v0.37.0
+	golang.org/x/crypto v0.38.0
 )
 
 require (
@@ -41,12 +41,12 @@ require (
 	github.com/spaolacci/murmur3 v1.1.0 // indirect
 	github.com/valyala/fastjson v1.6.4 // indirect
 	go.opentelemetry.io/auto/sdk v1.1.0 // indirect
-	go.opentelemetry.io/otel v1.35.0 // indirect
-	go.opentelemetry.io/otel/metric v1.35.0 // indirect
-	go.opentelemetry.io/otel/trace v1.35.0 // indirect
-	golang.org/x/net v0.39.0 // indirect
-	golang.org/x/sys v0.32.0 // indirect
-	golang.org/x/text v0.24.0 // indirect
+	go.opentelemetry.io/otel v1.36.0 // indirect
+	go.opentelemetry.io/otel/metric v1.36.0 // indirect
+	go.opentelemetry.io/otel/trace v1.36.0 // indirect
+	golang.org/x/net v0.40.0 // indirect
+	golang.org/x/sys v0.33.0 // indirect
+	golang.org/x/text v0.25.0 // indirect
 	google.golang.org/protobuf v1.36.6 // indirect
 	gopkg.in/neurosnap/sentences.v1 v1.0.7 // indirect
 )
