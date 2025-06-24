@@ -4,12 +4,12 @@ go 1.23.0
 
 require (
 	github.com/dgraph-io/badger/v4 v4.7.0
-	github.com/go-ap/activitypub v0.0.0-20250527110644-1410ed93404d
+	github.com/go-ap/activitypub v0.0.0-20250624113752-67e4989cab6d
 	github.com/go-ap/cache v0.0.0-20250527110731-01dd30d088be
 	github.com/go-ap/errors v0.0.0-20250527110557-c8db454e53fd
-	github.com/go-ap/filters v0.0.0-20250527111509-8ef063ce5449
+	github.com/go-ap/filters v0.0.0-20250624114123-8b0381a095ec
 	github.com/openshift/osin v1.0.2-0.20220317075346-0f4d38c6e53f
-	golang.org/x/crypto v0.38.0
+	golang.org/x/crypto v0.39.0
 )
 
 require (
@@ -20,7 +20,7 @@ require (
 	github.com/dgraph-io/ristretto/v2 v2.2.0 // indirect
 	github.com/dustin/go-humanize v1.0.1 // indirect
 	github.com/go-ap/jsonld v0.0.0-20221030091449-f2a191312c73 // indirect
-	github.com/go-logr/logr v1.4.2 // indirect
+	github.com/go-logr/logr v1.4.3 // indirect
 	github.com/go-logr/stdr v1.2.2 // indirect
 	github.com/google/flatbuffers v25.2.10+incompatible // indirect
 	github.com/google/uuid v1.6.0 // indirect
@@ -35,9 +35,9 @@ require (
 	go.opentelemetry.io/otel v1.36.0 // indirect
 	go.opentelemetry.io/otel/metric v1.36.0 // indirect
 	go.opentelemetry.io/otel/trace v1.36.0 // indirect
-	golang.org/x/net v0.40.0 // indirect
+	golang.org/x/net v0.41.0 // indirect
 	golang.org/x/sys v0.33.0 // indirect
-	golang.org/x/text v0.25.0 // indirect
+	golang.org/x/text v0.26.0 // indirect
 	google.golang.org/protobuf v1.36.6 // indirect
 	gopkg.in/neurosnap/sentences.v1 v1.0.7 // indirect
 )
