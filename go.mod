@@ -4,10 +4,10 @@ go 1.24.0
 
 require (
 	github.com/dgraph-io/badger/v4 v4.8.0
-	github.com/go-ap/activitypub v0.0.0-20250905102448-e9df599e4528
+	github.com/go-ap/activitypub v0.0.0-20250924114144-2429ef373dc3
 	github.com/go-ap/cache v0.0.0-20250905102525-152e952d5d86
 	github.com/go-ap/errors v0.0.0-20250905102357-4480b47a00c4
-	github.com/go-ap/filters v0.0.0-20250909130221-883df1a722e4
+	github.com/go-ap/filters v0.0.0-20250924114310-9ddada298f9d
 	github.com/openshift/osin v1.0.2-0.20220317075346-0f4d38c6e53f
 	golang.org/x/crypto v0.42.0
 )
@@ -22,7 +22,7 @@ require (
 	github.com/go-ap/jsonld v0.0.0-20250905102310-8480b0fe24d9 // indirect
 	github.com/go-logr/logr v1.4.3 // indirect
 	github.com/go-logr/stdr v1.2.2 // indirect
-	github.com/google/flatbuffers v25.2.10+incompatible // indirect
+	github.com/google/flatbuffers v25.9.23+incompatible // indirect
 	github.com/google/uuid v1.6.0 // indirect
 	github.com/jdkato/prose v1.2.1 // indirect
 	github.com/klauspost/compress v1.18.0 // indirect
@@ -31,11 +31,11 @@ require (
 	github.com/pborman/uuid v1.2.1 // indirect
 	github.com/spaolacci/murmur3 v1.1.0 // indirect
 	github.com/valyala/fastjson v1.6.4 // indirect
-	go.opentelemetry.io/auto/sdk v1.1.0 // indirect
+	go.opentelemetry.io/auto/sdk v1.2.1 // indirect
 	go.opentelemetry.io/otel v1.38.0 // indirect
 	go.opentelemetry.io/otel/metric v1.38.0 // indirect
 	go.opentelemetry.io/otel/trace v1.38.0 // indirect
-	golang.org/x/net v0.43.0 // indirect
+	golang.org/x/net v0.44.0 // indirect
 	golang.org/x/sys v0.36.0 // indirect
 	golang.org/x/text v0.29.0 // indirect
 	google.golang.org/protobuf v1.36.9 // indirect
