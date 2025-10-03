@@ -4,10 +4,10 @@ go 1.24.0
 
 require (
 	github.com/dgraph-io/badger/v4 v4.8.0
-	github.com/go-ap/activitypub v0.0.0-20250924114144-2429ef373dc3
-	github.com/go-ap/cache v0.0.0-20250905102525-152e952d5d86
+	github.com/go-ap/activitypub v0.0.0-20251001083933-784b40c638ca
+	github.com/go-ap/cache v0.0.0-20250924114254-a6be9a7d6a3b
 	github.com/go-ap/errors v0.0.0-20250905102357-4480b47a00c4
-	github.com/go-ap/filters v0.0.0-20250924114310-9ddada298f9d
+	github.com/go-ap/filters v0.0.0-20251003135225-aafe07461701
 	github.com/openshift/osin v1.0.2-0.20220317075346-0f4d38c6e53f
 	golang.org/x/crypto v0.42.0
 )
@@ -38,7 +38,7 @@ require (
 	golang.org/x/net v0.44.0 // indirect
 	golang.org/x/sys v0.36.0 // indirect
 	golang.org/x/text v0.29.0 // indirect
-	google.golang.org/protobuf v1.36.9 // indirect
+	google.golang.org/protobuf v1.36.10 // indirect
 	gopkg.in/neurosnap/sentences.v1 v1.0.7 // indirect
 )
 
