@@ -172,7 +172,7 @@ func onCollection(r *repo, col vocab.IRI, it vocab.Item, fn func(iris vocab.IRIs
 func (r *repo) RemoveFrom(col vocab.IRI, it vocab.Item) error {
 	return onCollection(r, col, it, func(iris vocab.IRIs) (vocab.IRIs, error) {
 		for k, iri := range iris {
-			if iri.GetLink().Equals(it.GetLink(), false) {
+			if iri.GetLink().Equal(it.GetLink(), false) {
 				iris = append(iris[:k], iris[k+1:]...)
 				break
 			}

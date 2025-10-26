@@ -4,10 +4,10 @@ go 1.24.0
 
 require (
 	github.com/dgraph-io/badger/v4 v4.8.0
-	github.com/go-ap/activitypub v0.0.0-20251023124303-72d37526e637
-	github.com/go-ap/cache v0.0.0-20251022103302-62495d7c9c9c
+	github.com/go-ap/activitypub v0.0.0-20251026152536-abe2dfa8e494
+	github.com/go-ap/cache v0.0.0-20251023124652-cea883170078
 	github.com/go-ap/errors v0.0.0-20250905102357-4480b47a00c4
-	github.com/go-ap/filters v0.0.0-20251023124807-74f4640efcf0
+	github.com/go-ap/filters v0.0.0-20251026153834-ff24f27629ef
 	github.com/openshift/osin v1.0.2-0.20220317075346-0f4d38c6e53f
 	golang.org/x/crypto v0.43.0
 )
@@ -15,7 +15,7 @@ require (
 require (
 	git.sr.ht/~mariusor/go-xsd-duration v0.0.0-20220703122237-02e73435a078 // indirect
 	github.com/RoaringBitmap/roaring v1.9.4 // indirect
-	github.com/bits-and-blooms/bitset v1.24.1 // indirect
+	github.com/bits-and-blooms/bitset v1.24.2 // indirect
 	github.com/cespare/xxhash/v2 v2.3.0 // indirect
 	github.com/dgraph-io/ristretto/v2 v2.3.0 // indirect
 	github.com/dustin/go-humanize v1.0.1 // indirect
