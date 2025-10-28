@@ -169,16 +169,22 @@ func onCollection(r *repo, col vocab.IRI, it vocab.Item, fn func(iris vocab.IRIs
 }
 
 // RemoveFrom
-func (r *repo) RemoveFrom(col vocab.IRI, it vocab.Item) error {
-	return onCollection(r, col, it, func(iris vocab.IRIs) (vocab.IRIs, error) {
-		for k, iri := range iris {
-			if iri.GetLink().Equals(it.GetLink(), false) {
-				iris = append(iris[:k], iris[k+1:]...)
-				break
+func (r *repo) RemoveFrom(col vocab.IRI, items ...vocab.Item) error {
+	for _, it := range items {
+		err := onCollection(r, col, it, func(iris vocab.IRIs) (vocab.IRIs, error) {
+			for k, iri := range iris {
+				if iri.GetLink().Equals(it.GetLink(), false) {
+					iris = append(iris[:k], iris[k+1:]...)
+					break
+				}
 			}
+			return iris, nil
+		})
+		if err != nil {
+			return err
 		}
-		return iris, nil
-	})
+	}
+	return nil
 }
 
 func addCollectionOnObject(r *repo, col vocab.IRI) error {
@@ -196,14 +202,20 @@ func addCollectionOnObject(r *repo, col vocab.IRI) error {
 }
 
 // AddTo
-func (r *repo) AddTo(col vocab.IRI, it vocab.Item) error {
+func (r *repo) AddTo(col vocab.IRI, items ...vocab.Item) error {
 	_ = addCollectionOnObject(r, col)
-	return onCollection(r, col, it, func(iris vocab.IRIs) (vocab.IRIs, error) {
-		if iris.Contains(it.GetLink()) {
-			return iris, nil
+	for _, it := range items {
+		err := onCollection(r, col, it, func(iris vocab.IRIs) (vocab.IRIs, error) {
+			if iris.Contains(it.GetLink()) {
+				return iris, nil
+			}
+			return append(iris, it.GetLink()), nil
+		})
+		if err != nil {
+			return err
 		}
-		return append(iris, it.GetLink()), nil
-	})
+	}
+	return nil
 }
 
 // Delete

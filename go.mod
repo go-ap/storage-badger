@@ -5,7 +5,7 @@ go 1.24.0
 require (
 	github.com/dgraph-io/badger/v4 v4.8.0
 	github.com/go-ap/activitypub v0.0.0-20251027164102-d8bc432e9bc1
-	github.com/go-ap/cache v0.0.0-20251027154439-a415bac364da
+	github.com/go-ap/cache v0.0.0-20251027164232-9b6c110a4d45
 	github.com/go-ap/errors v0.0.0-20250905102357-4480b47a00c4
 	github.com/go-ap/filters v0.0.0-20251027164246-c84e70ece93e
 	github.com/openshift/osin v1.0.2-0.20220317075346-0f4d38c6e53f
