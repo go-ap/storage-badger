@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/dgraph-io/badger/v4"
+	vocab "github.com/go-ap/activitypub"
 	"github.com/go-ap/errors"
 	"github.com/openshift/osin"
 )
@@ -228,7 +229,7 @@ func (r *repo) loadTxnAuthorize(a *osin.AuthorizeData, code string) func(tx *bad
 		if err := it.Value(loadRawAuthorize(a)); err != nil {
 			return err
 		}
-		if a.Client == nil {
+		if a.Client != nil {
 			id := a.Client.GetId()
 			client, _ := a.Client.(*osin.DefaultClient)
 			if err = r.loadTxnClient(client, id)(tx); err != nil {
@@ -252,12 +253,14 @@ func loadRawAuthorize(a *osin.AuthorizeData) func(raw []byte) error {
 		a.RedirectUri = auth.RedirectURI
 		a.State = auth.State
 		a.CreatedAt = auth.CreatedAt
-		a.UserData = auth.Extra
 		if len(auth.Code) > 0 {
-			a.Client = &osin.DefaultClient{Id: auth.Code}
+			a.Client = &osin.DefaultClient{Id: auth.Client}
 		}
 		if a.ExpireAt().Before(time.Now().UTC()) {
 			return errors.Errorf("Token expired at %s.", a.ExpireAt().String())
+		}
+		if userData, ok := auth.Extra.(string); ok {
+			a.UserData = vocab.IRI(userData)
 		}
 		return nil
 	}
@@ -349,7 +352,12 @@ func loadRawAccess(a *osin.AccessData) func(raw []byte) error {
 		a.Scope = access.Scope
 		a.RedirectUri = access.RedirectURI
 		a.CreatedAt = access.CreatedAt.UTC()
-		a.UserData = access.Extra
+		if userData, ok := access.Extra.(string); ok {
+			a.UserData = vocab.IRI(userData)
+		}
+		if len(access.Client) > 0 {
+			a.Client = &osin.DefaultClient{Id: access.Client}
+		}
 		if len(access.Authorize) > 0 {
 			a.AuthorizeData = &osin.AuthorizeData{Code: access.Authorize}
 		}
@@ -424,7 +432,25 @@ func (r *repo) LoadRefresh(token string) (*osin.AccessData, error) {
 	if token == "" {
 		return nil, errors.NotFoundf("Empty refresh token")
 	}
-	return nil, nil
+
+	refresh := ref{}
+	err := r.d.View(func(tx *badger.Txn) error {
+		path := r.refreshPath(token)
+		it, err := tx.Get(path)
+		if err != nil {
+			return errors.NewNotFound(err, "Invalid path %s", path)
+		}
+		return it.Value(func(val []byte) error {
+			return decodeFn(val, &refresh)
+		})
+	})
+	if err != nil {
+		return nil, errors.NewNotFound(err, "Refresh token not found")
+	}
+	if refresh.Access == "" {
+		return nil, errors.NotFoundf("Refresh token not found")
+	}
+	return r.LoadAccess(refresh.Access)
 }
 
 // RemoveRefresh revokes or deletes refresh AccessData.
