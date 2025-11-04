@@ -1,0 +1,24 @@
+//go:build conformance
+
+package badger
+
+import (
+	"testing"
+
+	conformance "github.com/go-ap/storage-conformance-suite"
+)
+
+func initStorage(t *testing.T) conformance.ActivityPubStorage {
+	storage, err := New(Config{Path: t.TempDir(), LogFn: t.Logf, ErrFn: t.Logf})
+	if err != nil {
+		t.Fatalf("unable to initialize storage: %s", err)
+	}
+	return storage
+}
+
+func Test_Conformance(t *testing.T) {
+	conformance.Suite(
+		conformance.TestActivityPub, conformance.TestMetadata,
+		conformance.TestKey, conformance.TestOAuth, conformance.TestPassword,
+	).Run(t, initStorage(t))
+}

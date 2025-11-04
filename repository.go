@@ -59,18 +59,21 @@ func New(c Config) (*repo, error) {
 	return &b, nil
 }
 
-// Open opens the badger database if possible.
-func (r *repo) Open() error {
-	c := badger.DefaultOptions(r.path)
-	logger := logger{logFn: r.logFn, errFn: r.errFn}
+func badgerOpenConfig(path string, logFn, errFn loggerFn) badger.Options {
+	c := badger.DefaultOptions(path)
+	logger := logger{logFn: logFn, errFn: errFn}
 	c = c.WithLogger(logger)
-	if r.path == "" {
+	if path == "" {
 		c.InMemory = true
 	}
 	c.MetricsEnabled = false
+	return c
+}
 
+// Open opens the badger database if possible.
+func (r *repo) Open() error {
 	var err error
-	r.d, err = badger.Open(c)
+	r.d, err = badger.Open(badgerOpenConfig(r.path, r.logFn, r.errFn))
 	if err != nil {
 		err = errors.Annotatef(err, "unable to open storage")
 	}
@@ -91,7 +94,12 @@ func (r *repo) Load(i vocab.IRI, checks ...filters.Check) (vocab.Item, error) {
 	return filters.Checks(checks).Run(ret), err
 }
 
+var errNotOpen = errors.Newf("badger db is not open")
+
 func (r *repo) Create(col vocab.CollectionInterface) (vocab.CollectionInterface, error) {
+	if r.d == nil {
+		return nil, errNotOpen
+	}
 	if vocab.IsIRI(col) {
 		return col, errors.Errorf("invalid collection to save: %s", col)
 	}
@@ -99,7 +107,10 @@ func (r *repo) Create(col vocab.CollectionInterface) (vocab.CollectionInterface,
 	err := r.d.Update(func(txn *badger.Txn) error {
 		return saveRawItem(txn, col)
 	})
-	return col, err
+	if err != nil {
+		return nil, err
+	}
+	return col, nil
 }
 
 // Save
@@ -118,17 +129,17 @@ func (r *repo) Save(it vocab.Item) (vocab.Item, error) {
 	return it, err
 }
 
-func onCollection(r *repo, col vocab.IRI, it vocab.Item, fn func(iris vocab.IRIs) (vocab.IRIs, error)) error {
+func onCollection(r *repo, col vocab.Item, it vocab.Item, fn func(iris vocab.IRIs) (vocab.IRIs, error)) error {
 	if vocab.IsNil(it) {
 		return errors.Newf("Unable to operate on nil element")
 	}
-	if len(col) == 0 {
+	if vocab.IsNil(col) {
 		return errors.Newf("Unable to find collection")
 	}
 	if len(it.GetLink()) == 0 {
 		return errors.Newf("Invalid collection, it does not have a valid IRI")
 	}
-	p := itemPath(col)
+	p := itemPath(col.GetLink())
 
 	return r.d.Update(func(tx *badger.Txn) error {
 		var iris vocab.IRIs
@@ -201,9 +212,49 @@ func addCollectionOnObject(r *repo, col vocab.IRI) error {
 	return nil
 }
 
+func isHiddenCollectionIRI(iri vocab.IRI) bool {
+	lst := vocab.CollectionPath(filepath.Base(iri.String()))
+	return filters.HiddenCollections.Contains(lst)
+}
+
+func emptyCollection(colIRI vocab.IRI, owner vocab.Item) vocab.CollectionInterface {
+	col := vocab.OrderedCollection{
+		ID:        colIRI,
+		Type:      vocab.OrderedCollectionType,
+		CC:        vocab.ItemCollection{vocab.PublicNS},
+		Published: time.Now().UTC(),
+	}
+	if !vocab.IsNil(owner) {
+		col.AttributedTo = owner.GetLink()
+	}
+	return &col
+}
+
+func createCollection(r *repo, colIRI vocab.IRI, owner vocab.Item) (vocab.CollectionInterface, error) {
+	col := emptyCollection(colIRI, owner)
+	if _, err := save(r, col); err != nil {
+		return nil, err
+	}
+	return col, nil
+}
+
 // AddTo
-func (r *repo) AddTo(col vocab.IRI, items ...vocab.Item) error {
-	_ = addCollectionOnObject(r, col)
+func (r *repo) AddTo(colIRI vocab.IRI, items ...vocab.Item) error {
+	col, err := r.loadOneFromPath(colIRI)
+	if err != nil && !isHiddenCollectionIRI(colIRI) {
+		return err
+	}
+	if col == nil && isHiddenCollectionIRI(colIRI) {
+		// NOTE(marius): for hidden collections we might not have the __raw file on disk, so we just try to create it
+		// Here we assume the owner can be inferred from the collection IRI, but that's just a FedBOX implementation
+		// detail. We should find a different way to pass collection owner - maybe the processing package checks for
+		// existence of the blocked collection, and explicitly creates it if it doesn't.
+		maybeOwner, _ := vocab.Split(colIRI)
+		if col, err = createCollection(r, colIRI, maybeOwner); err != nil {
+			return err
+		}
+	}
+
 	for _, it := range items {
 		err := onCollection(r, col, it, func(iris vocab.IRIs) (vocab.IRIs, error) {
 			if iris.Contains(it.GetLink()) {
@@ -312,23 +363,12 @@ func deleteCollections(r *repo, it vocab.Item) error {
 }
 
 func save(r *repo, it vocab.Item) (vocab.Item, error) {
-	itPath := itemPath(it.GetLink())
-
 	err := r.d.Update(func(txn *badger.Txn) error {
 		if err := createCollections(txn, it); err != nil {
 			return errors.Annotatef(err, "could not create object's collections")
 		}
 
-		entryBytes, err := encodeItemFn(it)
-		if err != nil {
-			return errors.Annotatef(err, "could not marshal object")
-		}
-
-		k := getObjectKey(itPath)
-		if err = txn.Set(k, entryBytes); err != nil {
-			return errors.Annotatef(err, "could not store encoded object")
-		}
-		return nil
+		return saveRawItem(txn, it)
 	})
 
 	return it, err
@@ -483,6 +523,7 @@ func loadFilteredPropsForObject(r *repo, f Filterable) func(o *vocab.Object) err
 		})
 	}
 }
+
 func loadFilteredPropsForActivity(r *repo, f Filterable) func(a *vocab.Activity) error {
 	return func(a *vocab.Activity) error {
 		if ok, fo := filters.FiltersOnActivityObject(f); ok && !vocab.IsNil(a.Object) && vocab.IsIRI(a.Object) {

@@ -5,7 +5,11 @@ import (
 	"testing"
 	"time"
 
+	"github.com/dgraph-io/badger/v4"
 	vocab "github.com/go-ap/activitypub"
+	"github.com/go-ap/cache"
+	"github.com/google/go-cmp/cmp"
+	"github.com/google/go-cmp/cmp/cmpopts"
 )
 
 func initBadgerForTesting(t *testing.T) (*repo, error) {
@@ -105,6 +109,76 @@ func Test_repo_AddTo(t *testing.T) {
 				if err != nil {
 					t.Errorf("%s", err)
 				}
+			}
+		})
+	}
+}
+
+func badgerOpen(t *testing.T) *badger.DB {
+	db, _ := badger.Open(badgerOpenConfig(t.TempDir(), t.Logf, t.Errorf))
+	return db
+}
+
+func Test_repo_Create(t *testing.T) {
+	var emptyExample = emptyCollection("https://example.com/test", vocab.IRI("https://example.com/~jdoe"))
+
+	type fields struct {
+		d     *badger.DB
+		path  string
+		cache cache.CanStore
+		logFn loggerFn
+		errFn loggerFn
+	}
+
+	tests := []struct {
+		name    string
+		fields  fields
+		col     vocab.CollectionInterface
+		want    vocab.CollectionInterface
+		wantErr error
+	}{
+		{
+			name:    "empty",
+			wantErr: errNotOpen,
+		},
+		{
+			name: "empty collection",
+			fields: fields{
+				d:     badgerOpen(t),
+				path:  t.TempDir(),
+				cache: nil,
+				logFn: t.Logf,
+				errFn: t.Errorf,
+			},
+			col:  emptyExample,
+			want: emptyExample,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			r := &repo{
+				d:     tt.fields.d,
+				path:  tt.fields.path,
+				cache: tt.fields.cache,
+				logFn: tt.fields.logFn,
+				errFn: tt.fields.errFn,
+			}
+			got, err := r.Create(tt.col)
+			if !cmp.Equal(err, tt.wantErr, cmpopts.EquateErrors()) {
+				t.Fatalf("Create() error = %s", cmp.Diff(tt.wantErr, err, cmpopts.EquateErrors()))
+			}
+			if !cmp.Equal(got, tt.want) {
+				t.Errorf("Create() got = %s", cmp.Diff(tt.want, got))
+			}
+			if tt.col == nil {
+				return
+			}
+			loaded, err := r.Load(tt.col.GetLink())
+			if err != nil {
+				t.Fatalf("Loaded collection after Create() error = %+s", err)
+			}
+			if !cmp.Equal(loaded, tt.want) {
+				t.Errorf("Loaded collection after Create() got = %s", cmp.Diff(tt.want, loaded))
 			}
 		})
 	}
