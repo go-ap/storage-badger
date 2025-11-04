@@ -87,7 +87,7 @@ func (r *repo) LoadMetadata(iri vocab.IRI, m any) error {
 	return r.d.View(func(tx *badger.Txn) error {
 		i, err := tx.Get(getMetadataKey(path))
 		if err != nil {
-			return errors.Annotatef(err, "Could not find metadata in path %s", path)
+			return errors.NewNotFound(err, "Could not find metadata in path %s", path)
 		}
 		return i.Value(func(raw []byte) error {
 			return decodeFn(raw, &m)
@@ -161,7 +161,7 @@ func (r *repo) SaveKey(iri vocab.IRI, key crypto.PrivateKey) (*vocab.PublicKey, 
 		pub = prv.Public()
 	case *dsa.PrivateKey:
 		pub = &prv.PublicKey
-	case *ed25519.PrivateKey:
+	case ed25519.PrivateKey:
 		pub = prv.Public()
 	default:
 		r.errFn("received key %T does not match any of the known private key types", key)
