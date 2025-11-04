@@ -146,7 +146,6 @@ func Test_repo_Create(t *testing.T) {
 			fields: fields{
 				d:     badgerOpen(t),
 				path:  t.TempDir(),
-				cache: nil,
 				logFn: t.Logf,
 				errFn: t.Errorf,
 			},
@@ -164,7 +163,7 @@ func Test_repo_Create(t *testing.T) {
 				errFn: tt.fields.errFn,
 			}
 			got, err := r.Create(tt.col)
-			if !cmp.Equal(err, tt.wantErr, cmpopts.EquateErrors()) {
+			if !cmp.Equal(err, tt.wantErr, cmpopts.EquateErrors(), cmpopts.EquateApproxTime(5*time.Second)) {
 				t.Fatalf("Create() error = %s", cmp.Diff(tt.wantErr, err, cmpopts.EquateErrors()))
 			}
 			if !cmp.Equal(got, tt.want) {

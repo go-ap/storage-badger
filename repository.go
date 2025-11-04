@@ -88,10 +88,23 @@ func (r *repo) close() error {
 	return r.d.Close()
 }
 
+func firstOrItem(it vocab.Item) vocab.Item {
+	if vocab.IsNil(it) {
+		return it
+	}
+	if vocab.IsItemCollection(it) {
+		_ = vocab.OnItemCollection(it, func(col *vocab.ItemCollection) error {
+			it = col.First()
+			return nil
+		})
+	}
+	return it
+}
+
 // Load
 func (r *repo) Load(i vocab.IRI, checks ...filters.Check) (vocab.Item, error) {
 	ret, err := r.loadFromPath(i, checks...)
-	return filters.Checks(checks).Run(ret), err
+	return filters.Checks(checks).Run(firstOrItem(ret)), err
 }
 
 var errNotOpen = errors.Newf("badger db is not open")
@@ -105,7 +118,11 @@ func (r *repo) Create(col vocab.CollectionInterface) (vocab.CollectionInterface,
 	}
 
 	err := r.d.Update(func(txn *badger.Txn) error {
-		return saveRawItem(txn, col)
+		if err := saveRawItem(txn, col); err != nil {
+			return err
+		}
+		itemsKey := getItemsKey(itemPath(col.GetLink()))
+		return txn.Set(itemsKey, []byte{'[', ']'})
 	})
 	if err != nil {
 		return nil, err
@@ -144,7 +161,7 @@ func onCollection(r *repo, col vocab.Item, it vocab.Item, fn func(iris vocab.IRI
 	return r.d.Update(func(tx *badger.Txn) error {
 		var iris vocab.IRIs
 
-		rawKey := getObjectKey(p)
+		rawKey := getItemsKey(p)
 		if i, err := tx.Get(rawKey); err == nil {
 			err = i.Value(func(raw []byte) error {
 				it, err := decodeItemFn(raw)
@@ -222,7 +239,7 @@ func emptyCollection(colIRI vocab.IRI, owner vocab.Item) vocab.CollectionInterfa
 		ID:        colIRI,
 		Type:      vocab.OrderedCollectionType,
 		CC:        vocab.ItemCollection{vocab.PublicNS},
-		Published: time.Now().UTC(),
+		Published: time.Now().UTC().Truncate(time.Second),
 	}
 	if !vocab.IsNil(owner) {
 		col.AttributedTo = owner.GetLink()
@@ -275,6 +292,7 @@ func (r *repo) Delete(it vocab.Item) error {
 }
 
 const objectKey = "__raw"
+const itemsKey = "__items"
 
 func delete(r *repo, it vocab.Item) error {
 	if it.IsCollection() {
@@ -423,7 +441,7 @@ func deleteFromPath(r *repo, b *badger.WriteBatch, it vocab.Item) error {
 	return nil
 }
 
-func (r *repo) loadFromIterator(col *vocab.ItemCollection, f Filterable) func(val []byte) error {
+func (r *repo) loadFromIterator(into *vocab.ItemCollection, f Filterable) func(val []byte) error {
 	isColFn := func(ff Filterable) bool {
 		_, ok := ff.(vocab.IRI)
 		return ok
@@ -439,26 +457,25 @@ func (r *repo) loadFromIterator(col *vocab.ItemCollection, f Filterable) func(va
 				return err
 			}
 			for _, it := range c {
-				if col.Contains(it.GetLink()) {
+				if into.Contains(it.GetLink()) {
 					continue
 				}
-				*col = append(*col, it)
+				*into = append(*into, it)
 			}
 		} else if it.IsCollection() {
-			return vocab.OnCollectionIntf(it, func(ci vocab.CollectionInterface) error {
+			return vocab.OnOrderedCollection(it, func(ci *vocab.OrderedCollection) error {
 				if isColFn(f) {
 					f = ci.Collection()
 				}
-				c, err := r.loadItemsElements(f, ci.Collection()...)
+				c, err := r.loadCollectionItemsElements(ci.ID)
 				if err != nil {
 					return err
 				}
-				for _, it := range c {
-					if col.Contains(it.GetLink()) {
-						continue
-					}
-					*col = append(*col, it)
+				if len(c) > 0 {
+					ci.OrderedItems = c
+					ci.TotalItems = uint(len(c))
 				}
+				*into = append(*into, ci)
 				return nil
 			})
 		} else {
@@ -490,8 +507,8 @@ func (r *repo) loadFromIterator(col *vocab.ItemCollection, f Filterable) func(va
 				if vocab.ActivityTypes.Contains(it.GetType()) {
 					_ = vocab.OnActivity(it, loadFilteredPropsForActivity(r, f))
 				}
-				if !col.Contains(it.GetLink()) {
-					*col = append(*col, it)
+				if !into.Contains(it.GetLink()) {
+					*into = append(*into, it)
 				}
 			}
 		}
@@ -582,7 +599,7 @@ func (r *repo) loadFromPath(iri vocab.IRI, checks ...filters.Check) (vocab.ItemC
 		fullPath := itemPath(iri)
 		k := getObjectKey(fullPath)
 
-		i, err := tx.Get(fullPath)
+		i, err := tx.Get(k)
 		if err != nil {
 			return errors.NotFoundf("unable to load item %s: %+s", fullPath, err)
 		}
@@ -612,6 +629,10 @@ func getObjectKey(p []byte) []byte {
 	return bytes.Join([][]byte{p, []byte(objectKey)}, sep)
 }
 
+func getItemsKey(p []byte) []byte {
+	return bytes.Join([][]byte{p, []byte(itemsKey)}, sep)
+}
+
 func (r *repo) loadItemsElements(f Filterable, iris ...vocab.Item) (vocab.ItemCollection, error) {
 	col := make(vocab.ItemCollection, 0)
 	err := r.d.View(func(tx *badger.Txn) error {
@@ -627,13 +648,41 @@ func (r *repo) loadItemsElements(f Filterable, iris ...vocab.Item) (vocab.ItemCo
 	return col, err
 }
 
+func (r *repo) loadCollectionItemsElements(colIRI vocab.IRI) (vocab.ItemCollection, error) {
+	var col vocab.ItemCollection
+	path := itemPath(colIRI)
+	err := r.d.View(func(tx *badger.Txn) error {
+		i, err := tx.Get(getItemsKey(path))
+		if err != nil {
+			return errors.NewNotFound(err, "Unable to load path %s", path)
+		}
+		return i.Value(func(val []byte) error {
+			it, err := decodeItemFn(val)
+			if err != nil {
+				return err
+			}
+			cc, err := vocab.ToItemCollection(it)
+			if err != nil {
+				return err
+			}
+			col = *cc
+			return nil
+		})
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	return r.loadItemsElements(nil, col...)
+}
+
 func (r *repo) loadItem(b *badger.Txn, path []byte, f Filterable) (vocab.Item, error) {
 	i, err := b.Get(getObjectKey(path))
 	if err != nil {
 		return nil, errors.NewNotFound(err, "Unable to load path %s", path)
 	}
 	var raw []byte
-	i.Value(func(val []byte) error {
+	_ = i.Value(func(val []byte) error {
 		raw = val
 		return nil
 	})
