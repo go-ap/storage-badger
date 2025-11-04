@@ -136,11 +136,16 @@ func (r *repo) ListClients() ([]osin.Client, error) {
 		opts := badger.DefaultIteratorOptions
 		opts.Prefix = badgerItemPath(clientsBucket)
 		it := tx.NewIterator(opts)
+		defer it.Close()
+
 		for it.Seek(opts.Prefix); it.ValidForPrefix(opts.Prefix); it.Next() {
 			item := it.Item()
 
 			c := osin.DefaultClient{}
-			item.Value(loadRawClient(&c))
+			err := item.Value(loadRawClient(&c))
+			if err != nil {
+				return err
+			}
 
 			clients = append(clients, &c)
 		}
@@ -164,7 +169,12 @@ func (r *repo) UpdateClient(c osin.Client) error {
 	if err != nil {
 		return errors.Annotatef(err, "Unable to marshal client object")
 	}
-	return r.d.NewWriteBatch().Set(r.clientPath(c.GetId()), raw)
+	tx := r.d.NewWriteBatch()
+	err = tx.Set(r.clientPath(c.GetId()), raw)
+	if err != nil {
+		return err
+	}
+	return tx.Flush()
 }
 
 // CreateClient stores the client in the database and returns an error, if something went wrong.
@@ -174,7 +184,11 @@ func (r *repo) CreateClient(c osin.Client) error {
 
 // RemoveClient removes a client (identified by id) from the database. Returns an error if something went wrong.
 func (r *repo) RemoveClient(id string) error {
-	return r.d.NewWriteBatch().Delete(r.clientPath(id))
+	tx := r.d.NewWriteBatch()
+	if err := tx.Delete(r.clientPath(id)); err != nil {
+		return err
+	}
+	return tx.Flush()
 }
 
 func (r *repo) authorizePath(code string) []byte {
@@ -197,7 +211,11 @@ func (r *repo) SaveAuthorize(data *osin.AuthorizeData) error {
 	if err != nil {
 		return errors.Annotatef(err, "Unable to marshal authorization object")
 	}
-	return r.d.NewWriteBatch().Set(r.authorizePath(data.Code), raw)
+	tx := r.d.NewWriteBatch()
+	if err = tx.Set(r.authorizePath(data.Code), raw); err != nil {
+		return err
+	}
+	return tx.Flush()
 }
 
 func (r *repo) loadTxnAuthorize(a *osin.AuthorizeData, code string) func(tx *badger.Txn) error {
@@ -211,8 +229,9 @@ func (r *repo) loadTxnAuthorize(a *osin.AuthorizeData, code string) func(tx *bad
 			return err
 		}
 		if a.Client == nil {
-			client := new(osin.DefaultClient)
-			if err := r.loadTxnClient(client, a.Client.GetId())(tx); err != nil {
+			id := a.Client.GetId()
+			client, _ := a.Client.(*osin.DefaultClient)
+			if err = r.loadTxnClient(client, id)(tx); err != nil {
 				return err
 			}
 			a.Client = client
@@ -284,13 +303,12 @@ func (r *repo) SaveAccess(data *osin.AccessData) error {
 		authorizeData = data.AuthorizeData
 	}
 
-	db := r.d.NewWriteBatch()
+	tx := r.d.NewWriteBatch()
 	if data.RefreshToken != "" {
-		if err := r.saveRefresh(db, data.RefreshToken, data.AccessToken); err != nil {
+		if err := r.saveRefresh(tx, data.RefreshToken, data.AccessToken); err != nil {
 			r.errFn("Failed saving refresh token for client id %s: %+s", data.Client.GetId(), err)
 			return err
 		}
-		return nil
 	}
 
 	if data.Client == nil {
@@ -313,7 +331,10 @@ func (r *repo) SaveAccess(data *osin.AccessData) error {
 	if err != nil {
 		return errors.Annotatef(err, "Unable to marshal access object")
 	}
-	return db.Set(r.accessPath(acc.AccessToken), raw)
+	if err = tx.Set(r.accessPath(acc.AccessToken), raw); err != nil {
+		return err
+	}
+	return tx.Flush()
 }
 
 func loadRawAccess(a *osin.AccessData) func(raw []byte) error {
@@ -363,8 +384,9 @@ func (r *repo) LoadAccess(code string) (*osin.AccessData, error) {
 	}
 
 	if result.Client != nil && len(result.Client.GetId()) > 0 {
-		client := new(osin.DefaultClient)
-		if err = r.d.View(r.loadTxnClient(client, result.Client.GetId())); err == nil {
+		id := result.Client.GetId()
+		client, _ := result.Client.(*osin.DefaultClient)
+		if err = r.d.View(r.loadTxnClient(client, id)); err == nil {
 			result.Client = client
 		}
 	}
@@ -386,7 +408,11 @@ func (r *repo) LoadAccess(code string) (*osin.AccessData, error) {
 
 // RemoveAccess
 func (r *repo) RemoveAccess(token string) error {
-	return r.d.NewWriteBatch().Delete(r.accessPath(token))
+	tx := r.d.NewWriteBatch()
+	if err := tx.Delete(r.accessPath(token)); err != nil {
+		return err
+	}
+	return tx.Flush()
 }
 
 func (r *repo) refreshPath(refresh string) []byte {
@@ -403,7 +429,11 @@ func (r *repo) LoadRefresh(token string) (*osin.AccessData, error) {
 
 // RemoveRefresh revokes or deletes refresh AccessData.
 func (r *repo) RemoveRefresh(token string) error {
-	return r.d.NewWriteBatch().Delete(r.refreshPath(token))
+	tx := r.d.NewWriteBatch()
+	if err := tx.Delete(r.refreshPath(token)); err != nil {
+		return err
+	}
+	return tx.Flush()
 }
 
 func (r *repo) saveRefresh(txn *badger.WriteBatch, refresh, access string) (err error) {

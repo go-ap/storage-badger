@@ -295,24 +295,16 @@ const objectKey = "__raw"
 const itemsKey = "__items"
 
 func delete(r *repo, it vocab.Item) error {
-	if it.IsCollection() {
-		return vocab.OnCollectionIntf(it, func(c vocab.CollectionInterface) error {
-			for _, it := range c.Collection() {
-				if err := delete(r, it); err != nil {
-					r.errFn("Unable to remove item %s: %+s", it.GetLink(), err)
-				}
-			}
-			return nil
-		})
-	}
-
 	old, err := r.loadOneFromPath(it.GetLink(), filters.HasType(it.GetType()))
 	if err != nil {
 		return err
 	}
 
-	db := r.d.NewWriteBatch()
-	return deleteFromPath(r, db, old)
+	tx := r.d.NewWriteBatch()
+	if err = deleteFromPath(r, tx, old); err != nil {
+		return err
+	}
+	return tx.Flush()
 }
 
 // createCollections
@@ -377,7 +369,7 @@ func deleteCollections(r *repo, it vocab.Item) error {
 			return err
 		})
 	}
-	return nil
+	return tx.Flush()
 }
 
 func save(r *repo, it vocab.Item) (vocab.Item, error) {
