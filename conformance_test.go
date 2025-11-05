@@ -9,7 +9,7 @@ import (
 )
 
 func initStorage(t *testing.T) conformance.ActivityPubStorage {
-	storage, err := New(Config{Path: t.TempDir(), ErrFn: t.Errorf})
+	storage, err := New(Config{Path: t.TempDir()})
 	if err != nil {
 		t.Fatalf("unable to initialize storage: %s", err)
 	}
