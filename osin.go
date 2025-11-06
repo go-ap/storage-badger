@@ -72,9 +72,7 @@ func interfaceIsNil(c interface{}) bool {
 
 // Close closes the badger database if possible.
 func (r *repo) Close() {
-	if err := r.close(); err != nil {
-		r.errFn("error closing the badger db: %+s", err)
-	}
+	_ = r.close()
 }
 
 // Clone

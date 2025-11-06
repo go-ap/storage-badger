@@ -20,11 +20,11 @@ func initBadgerForTesting(t *testing.T) (*repo, error) {
 
 	r := &repo{
 		path:  tempDir,
-		logFn: t.Logf,
-		errFn: t.Errorf,
+		logFn: emptyLogFn,
+		errFn: emptyLogFn,
 	}
 
-	t.Logf("Initialized test db at %s", r.path)
+	//t.Logf("Initialized test db at %s", r.path)
 	return r, nil
 }
 
@@ -68,6 +68,17 @@ func Test_repo_AddTo(t *testing.T) {
 			},
 			wantErr: false,
 		},
+		{
+			name: "outbox multiple activities",
+			args: args{
+				col: vocab.IRI("http://example.com/outbox"),
+				it: vocab.ItemCollection{
+					vocab.Activity{ID: "http://example.com/1", Type: vocab.CreateType},
+					vocab.Activity{ID: "http://example.com/2", Type: vocab.CreateType},
+				},
+			},
+			wantErr: false,
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -82,17 +93,19 @@ func Test_repo_AddTo(t *testing.T) {
 				t.Errorf("unable to create collection %s: %s", tt.args.it, err)
 			}
 			for _, it := range tt.args.it {
-				mock := vocab.Object{ID: it.GetLink()}
+				mock := it
+				if vocab.IsIRI(it) {
+					mock = vocab.Object{ID: it.GetLink(), Type: vocab.NoteType}
+				}
 				if _, err = r.Save(mock); err != nil {
 					t.Errorf("unable to save %s: %s", tt.args.it, err)
 				}
-
-				if err := r.AddTo(tt.args.col, it); (err != nil) != tt.wantErr {
-					t.Errorf("AddTo() error = %v, wantErr %v", err, tt.wantErr)
-				}
-				if tt.wantErr {
-					return
-				}
+			}
+			if err := r.AddTo(tt.args.col, tt.args.it...); (err != nil) != tt.wantErr {
+				t.Errorf("AddTo() error = %v, wantErr %v", err, tt.wantErr)
+			}
+			if tt.wantErr {
+				return
 			}
 
 			res, err := r.Load(tt.args.col.GetLink())
@@ -115,7 +128,7 @@ func Test_repo_AddTo(t *testing.T) {
 }
 
 func badgerOpen(t *testing.T) *badger.DB {
-	db, _ := badger.Open(badgerOpenConfig(t.TempDir(), t.Logf, t.Errorf))
+	db, _ := badger.Open(badgerOpenConfig(t.TempDir(), emptyLogFn, emptyLogFn))
 	return db
 }
 
@@ -126,8 +139,6 @@ func Test_repo_Create(t *testing.T) {
 		d     *badger.DB
 		path  string
 		cache cache.CanStore
-		logFn loggerFn
-		errFn loggerFn
 	}
 
 	tests := []struct {
@@ -144,10 +155,8 @@ func Test_repo_Create(t *testing.T) {
 		{
 			name: "empty collection",
 			fields: fields{
-				d:     badgerOpen(t),
-				path:  t.TempDir(),
-				logFn: t.Logf,
-				errFn: t.Errorf,
+				d:    badgerOpen(t),
+				path: t.TempDir(),
 			},
 			col:  emptyExample,
 			want: emptyExample,
@@ -159,8 +168,8 @@ func Test_repo_Create(t *testing.T) {
 				d:     tt.fields.d,
 				path:  tt.fields.path,
 				cache: tt.fields.cache,
-				logFn: tt.fields.logFn,
-				errFn: tt.fields.errFn,
+				logFn: emptyLogFn,
+				errFn: emptyLogFn,
 			}
 			got, err := r.Create(tt.col)
 			if !cmp.Equal(err, tt.wantErr, cmpopts.EquateErrors(), cmpopts.EquateApproxTime(5*time.Second)) {
