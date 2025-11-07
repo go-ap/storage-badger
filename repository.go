@@ -255,16 +255,17 @@ func (r *repo) AddTo(colIRI vocab.IRI, items ...vocab.Item) error {
 		}
 		col = maybeCol
 		if col == nil && isHiddenCollectionIRI(colIRI) {
-			// NOTE(marius): for hidden collections we might not have the __raw file on disk, so we just try to create it
+			// NOTE(marius): for hidden collections we try to create it automatically if it doesn't exist.
 			// Here we assume the owner can be inferred from the collection IRI, but that's just a FedBOX implementation
 			// detail. We should find a different way to pass collection owner - maybe the processing package checks for
 			// existence of the blocked collection, and explicitly creates it if it doesn't.
 			maybeOwner, _ := vocab.Split(colIRI)
-			_ = toWrite.Append(emptyCollection(colIRI, maybeOwner))
+			col = emptyCollection(colIRI, maybeOwner)
+			_ = toWrite.Append(col)
 		}
 		for _, it := range items {
-			_, err := r.loadItem(tx, getObjectKey(itemPath(it.GetLink())))
-			if err != nil && errors.IsNotFound(err) {
+			_, err = r.loadItem(tx, getObjectKey(itemPath(it.GetLink())))
+			if err != nil && errors.IsNotFound(err) && !vocab.IsIRI(it) {
 				_ = toWrite.Append(it)
 			}
 		}
