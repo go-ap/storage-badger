@@ -77,7 +77,6 @@ func (r *repo) Close() {
 
 // Clone
 func (r *repo) Clone() osin.Storage {
-	r.Close()
 	return r
 }
 
