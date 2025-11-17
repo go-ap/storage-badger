@@ -486,7 +486,7 @@ func deleteFromTx(tx *badger.WriteBatch, it vocab.Item) error {
 	return nil
 }
 
-func (r *repo) loadFromItem(tx *badger.Txn, into *vocab.ItemCollection, iri vocab.IRI, f Filterable) func(val []byte) error {
+func (r *repo) loadFromItem(tx *badger.Txn, into *vocab.ItemCollection, iri vocab.IRI, f ...filters.Check) func(val []byte) error {
 	return func(val []byte) error {
 		it, err := loadItem(val)
 		if err != nil || vocab.IsNil(it) {
@@ -529,22 +529,18 @@ func (r *repo) loadFromItem(tx *badger.Txn, into *vocab.ItemCollection, iri voca
 				})
 			}
 
-			it, err = filters.FilterIt(it, iri)
-			if err != nil {
-				return err
-			}
-			if it != nil {
+			if !vocab.IsNil(it) {
 				if vocab.ActorTypes.Contains(it.GetType()) {
-					_ = vocab.OnActor(it, loadFilteredPropsForActor(r, tx, f))
+					_ = vocab.OnActor(it, loadFilteredPropsForActor(r, tx, f...))
 				}
 				if vocab.ObjectTypes.Contains(it.GetType()) {
-					_ = vocab.OnObject(it, loadFilteredPropsForObject(r, tx, f))
+					_ = vocab.OnObject(it, loadFilteredPropsForObject(r, tx, f...))
 				}
 				if vocab.IntransitiveActivityTypes.Contains(it.GetType()) {
-					_ = vocab.OnIntransitiveActivity(it, loadFilteredPropsForIntransitiveActivity(r, tx, f))
+					_ = vocab.OnIntransitiveActivity(it, loadFilteredPropsForIntransitiveActivity(r, tx, f...))
 				}
 				if vocab.ActivityTypes.Contains(it.GetType()) {
-					_ = vocab.OnActivity(it, loadFilteredPropsForActivity(r, tx, f))
+					_ = vocab.OnActivity(it, loadFilteredPropsForActivity(r, tx, f...))
 				}
 				if !into.Contains(it.GetLink()) {
 					*into = append(*into, it)
@@ -555,13 +551,13 @@ func (r *repo) loadFromItem(tx *badger.Txn, into *vocab.ItemCollection, iri voca
 	}
 }
 
-func loadFilteredPropsForActor(r *repo, tx *badger.Txn, f Filterable) func(a *vocab.Actor) error {
+func loadFilteredPropsForActor(r *repo, tx *badger.Txn, f ...filters.Check) func(a *vocab.Actor) error {
 	return func(a *vocab.Actor) error {
-		return vocab.OnObject(a, loadFilteredPropsForObject(r, tx, f))
+		return vocab.OnObject(a, loadFilteredPropsForObject(r, tx, f...))
 	}
 }
 
-func loadFilteredPropsForObject(r *repo, tx *badger.Txn, f Filterable) func(o *vocab.Object) error {
+func loadFilteredPropsForObject(r *repo, tx *badger.Txn, _ ...filters.Check) func(o *vocab.Object) error {
 	return func(o *vocab.Object) error {
 		if len(o.Tag) == 0 {
 			return nil
@@ -580,33 +576,27 @@ func loadFilteredPropsForObject(r *repo, tx *badger.Txn, f Filterable) func(o *v
 	}
 }
 
-func loadFilteredPropsForActivity(r *repo, tx *badger.Txn, f Filterable) func(a *vocab.Activity) error {
+func loadFilteredPropsForActivity(r *repo, tx *badger.Txn, f ...filters.Check) func(a *vocab.Activity) error {
 	return func(a *vocab.Activity) error {
-		if ok, fo := filters.FiltersOnActivityObject(f); ok && !vocab.IsNil(a.Object) && vocab.IsIRI(a.Object) {
+		if len(filters.ObjectChecks(f...)) > 0 {
 			if ob, err := r.loadOneFromPath(tx, a.Object.GetLink()); err == nil {
-				if ob, _ = filters.FilterIt(ob, fo); ob != nil {
-					a.Object = ob
-				}
+				a.Object = ob
 			}
 		}
-		return vocab.OnIntransitiveActivity(a, loadFilteredPropsForIntransitiveActivity(r, tx, f))
+		return vocab.OnIntransitiveActivity(a, loadFilteredPropsForIntransitiveActivity(r, tx, f...))
 	}
 }
 
-func loadFilteredPropsForIntransitiveActivity(r *repo, tx *badger.Txn, f Filterable) func(a *vocab.IntransitiveActivity) error {
+func loadFilteredPropsForIntransitiveActivity(r *repo, tx *badger.Txn, f ...filters.Check) func(a *vocab.IntransitiveActivity) error {
 	return func(a *vocab.IntransitiveActivity) error {
-		if ok, fa := filters.FiltersOnActivityActor(f); ok && !vocab.IsNil(a.Actor) && vocab.IsIRI(a.Actor) {
+		if len(filters.ActorChecks(f...)) > 0 {
 			if act, err := r.loadOneFromPath(tx, a.Actor.GetLink()); err == nil {
-				if act, _ = filters.FilterIt(act, fa); act != nil {
-					a.Actor = act
-				}
+				a.Actor = act
 			}
 		}
-		if ok, ft := filters.FiltersOnActivityTarget(f); ok && !vocab.IsNil(a.Target) && vocab.IsIRI(a.Target) {
+		if len(filters.TargetChecks(f...)) > 0 {
 			if t, err := r.loadOneFromPath(tx, a.Target.GetLink()); err == nil {
-				if t, _ = filters.FilterIt(t, ft); t != nil {
-					a.Target = t
-				}
+				a.Target = t
 			}
 		}
 		return nil
@@ -645,7 +635,7 @@ func (r *repo) loadFromPath(tx *badger.Txn, iri vocab.IRI, checks ...filters.Che
 		return nil, errors.NotFoundf("unable to load item %s: %+s", fullPath, err)
 	}
 
-	if err = i.Value(r.loadFromItem(tx, &col, iri, nil)); err != nil {
+	if err = i.Value(r.loadFromItem(tx, &col, iri, checks...)); err != nil {
 		r.errFn("unable to load item %s: %+s", k, err)
 		return nil, err
 	}

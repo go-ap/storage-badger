@@ -7,7 +7,7 @@ require (
 	github.com/go-ap/activitypub v0.0.0-20251028130710-8bc6217f6c8d
 	github.com/go-ap/cache v0.0.0-20251028142135-e067d18ce6a1
 	github.com/go-ap/errors v0.0.0-20250905102357-4480b47a00c4
-	github.com/go-ap/filters v0.0.0-20251107171832-f29304e3da0b
+	github.com/go-ap/filters v0.0.0-20251117144141-b3e7ce46ead4
 	github.com/go-ap/storage-conformance-suite v0.0.0-20251107175308-1f25da14ce88
 	github.com/google/go-cmp v0.7.0
 	github.com/openshift/osin v1.0.2-0.20220317075346-0f4d38c6e53f
@@ -17,7 +17,7 @@ require (
 require (
 	git.sr.ht/~mariusor/go-xsd-duration v0.0.0-20220703122237-02e73435a078 // indirect
 	github.com/RoaringBitmap/roaring v1.9.4 // indirect
-	github.com/bits-and-blooms/bitset v1.24.3 // indirect
+	github.com/bits-and-blooms/bitset v1.24.4 // indirect
 	github.com/cespare/xxhash/v2 v2.3.0 // indirect
 	github.com/dgraph-io/ristretto/v2 v2.3.0 // indirect
 	github.com/dustin/go-humanize v1.0.1 // indirect
