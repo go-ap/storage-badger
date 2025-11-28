@@ -42,7 +42,6 @@ type auth struct {
 type acc struct {
 	Client       string
 	Authorize    string
-	Previous     string
 	AccessToken  string
 	RefreshToken string
 	ExpiresIn    time.Duration
@@ -117,20 +116,26 @@ func loadRawClient(c *osin.DefaultClient) func(raw []byte) error {
 
 // GetClient
 func (r *repo) GetClient(id string) (osin.Client, error) {
+	if r == nil || r.root == nil {
+		return nil, errNotOpen
+	}
 	if id == "" {
 		return nil, errors.NotFoundf("Empty client id")
 	}
 
 	c := new(osin.DefaultClient)
-	if err := r.d.View(r.loadTxnClient(c, id)); err != nil {
+	if err := r.root.View(r.loadTxnClient(c, id)); err != nil {
 		return nil, err
 	}
 	return c, nil
 }
 
 func (r *repo) ListClients() ([]osin.Client, error) {
+	if r == nil || r.root == nil {
+		return nil, errNotOpen
+	}
 	clients := make([]osin.Client, 0)
-	err := r.d.View(func(tx *badger.Txn) error {
+	err := r.root.View(func(tx *badger.Txn) error {
 		opts := badger.DefaultIteratorOptions
 		opts.Prefix = badgerItemPath(clientsBucket)
 		it := tx.NewIterator(opts)
@@ -152,8 +157,11 @@ func (r *repo) ListClients() ([]osin.Client, error) {
 	return clients, err
 }
 
-// UpdateClient updates the client (identified by it's id) and replaces the values with the values of client.
+// UpdateClient updates the client (identified by its id) and replaces the values with the values of client.
 func (r *repo) UpdateClient(c osin.Client) error {
+	if r == nil || r.root == nil {
+		return errNotOpen
+	}
 	if interfaceIsNil(c) {
 		return nil
 	}
@@ -167,7 +175,7 @@ func (r *repo) UpdateClient(c osin.Client) error {
 	if err != nil {
 		return errors.Annotatef(err, "Unable to marshal client object")
 	}
-	tx := r.d.NewWriteBatch()
+	tx := r.root.NewWriteBatch()
 	err = tx.Set(r.clientPath(c.GetId()), raw)
 	if err != nil {
 		return err
@@ -177,12 +185,18 @@ func (r *repo) UpdateClient(c osin.Client) error {
 
 // CreateClient stores the client in the database and returns an error, if something went wrong.
 func (r *repo) CreateClient(c osin.Client) error {
+	if r == nil || r.root == nil {
+		return errNotOpen
+	}
 	return r.UpdateClient(c)
 }
 
 // RemoveClient removes a client (identified by id) from the database. Returns an error if something went wrong.
 func (r *repo) RemoveClient(id string) error {
-	tx := r.d.NewWriteBatch()
+	if r == nil || r.root == nil {
+		return errNotOpen
+	}
+	tx := r.root.NewWriteBatch()
 	if err := tx.Delete(r.clientPath(id)); err != nil {
 		return err
 	}
@@ -195,6 +209,12 @@ func (r *repo) authorizePath(code string) []byte {
 
 // SaveAuthorize
 func (r *repo) SaveAuthorize(data *osin.AuthorizeData) error {
+	if r == nil || r.root == nil {
+		return errNotOpen
+	}
+	if data == nil {
+		return errors.Newf("unable to save nil authorization data")
+	}
 	auth := auth{
 		Client:      data.Client.GetId(),
 		Code:        data.Code,
@@ -209,7 +229,7 @@ func (r *repo) SaveAuthorize(data *osin.AuthorizeData) error {
 	if err != nil {
 		return errors.Annotatef(err, "Unable to marshal authorization object")
 	}
-	tx := r.d.NewWriteBatch()
+	tx := r.root.NewWriteBatch()
 	if err = tx.Set(r.authorizePath(data.Code), raw); err != nil {
 		return err
 	}
@@ -265,12 +285,15 @@ func loadRawAuthorize(a *osin.AuthorizeData) func(raw []byte) error {
 
 // LoadAuthorize
 func (r *repo) LoadAuthorize(code string) (*osin.AuthorizeData, error) {
+	if r == nil || r.root == nil {
+		return nil, errNotOpen
+	}
 	if code == "" {
 		return nil, errors.NotFoundf("Empty authorize code")
 	}
 	data := osin.AuthorizeData{}
 
-	err := r.d.View(r.loadTxnAuthorize(&data, code))
+	err := r.root.View(r.loadTxnAuthorize(&data, code))
 	if err != nil {
 		return nil, err
 	}
@@ -281,7 +304,10 @@ func (r *repo) LoadAuthorize(code string) (*osin.AuthorizeData, error) {
 
 // RemoveAuthorize
 func (r *repo) RemoveAuthorize(code string) error {
-	return r.d.Update(func(tx *badger.Txn) error {
+	if r == nil || r.root == nil {
+		return errNotOpen
+	}
+	return r.root.Update(func(tx *badger.Txn) error {
 		return tx.Delete(r.authorizePath(code))
 	})
 }
@@ -292,21 +318,23 @@ func (r *repo) accessPath(code string) []byte {
 
 // SaveAccess
 func (r *repo) SaveAccess(data *osin.AccessData) error {
-	prev := ""
+	if r == nil || r.root == nil {
+		return errNotOpen
+	}
+
 	authorizeData := &osin.AuthorizeData{}
 
-	if data.AccessData != nil {
-		prev = data.AccessData.AccessToken
+	if data.AccessData != nil && data.RefreshToken == "" {
+		data.RefreshToken = data.AccessData.AccessToken
 	}
 
 	if data.AuthorizeData != nil {
 		authorizeData = data.AuthorizeData
 	}
 
-	tx := r.d.NewWriteBatch()
+	tx := r.root.NewWriteBatch()
 	if data.RefreshToken != "" {
 		if err := r.saveRefresh(tx, data.RefreshToken, data.AccessToken); err != nil {
-			r.errFn("Failed saving refresh token for client id %s: %+s", data.Client.GetId(), err)
 			return err
 		}
 	}
@@ -318,7 +346,6 @@ func (r *repo) SaveAccess(data *osin.AccessData) error {
 	acc := acc{
 		Client:       data.Client.GetId(),
 		Authorize:    authorizeData.Code,
-		Previous:     prev,
 		AccessToken:  data.AccessToken,
 		RefreshToken: data.RefreshToken,
 		ExpiresIn:    time.Duration(data.ExpiresIn),
@@ -337,7 +364,7 @@ func (r *repo) SaveAccess(data *osin.AccessData) error {
 	return tx.Flush()
 }
 
-func loadRawAccess(a *osin.AccessData) func(raw []byte) error {
+func loadRawAccess(a *osin.AccessData, loadDeps bool) func(raw []byte) error {
 	return func(raw []byte) error {
 		access := acc{}
 		if err := decodeFn(raw, &access); err != nil {
@@ -355,57 +382,69 @@ func loadRawAccess(a *osin.AccessData) func(raw []byte) error {
 		if len(access.Client) > 0 {
 			a.Client = &osin.DefaultClient{Id: access.Client}
 		}
-		if len(access.Authorize) > 0 {
-			a.AuthorizeData = &osin.AuthorizeData{Code: access.Authorize}
-		}
-		if len(access.Previous) > 0 {
-			a.AccessData = &osin.AccessData{AccessToken: access.Previous}
+		if loadDeps {
+			if len(access.Authorize) > 0 {
+				a.AuthorizeData = &osin.AuthorizeData{Code: access.Authorize}
+			}
+			if len(access.RefreshToken) > 0 {
+				a.AccessData = &osin.AccessData{AccessToken: access.RefreshToken}
+			}
 		}
 		return nil
 	}
 }
 
-func (r *repo) loadTxnAccess(a *osin.AccessData, token string) func(tx *badger.Txn) error {
+func (r *repo) loadTxnAccess(a *osin.AccessData, token string, loadDeps bool) func(tx *badger.Txn) error {
 	fullPath := r.accessPath(token)
 	return func(tx *badger.Txn) error {
 		it, err := tx.Get(fullPath)
 		if err != nil {
 			return errors.NewNotFound(err, "Invalid path %s", fullPath)
 		}
-		return it.Value(loadRawAccess(a))
+		if err = it.Value(loadRawAccess(a, loadDeps)); err != nil {
+			return err
+		}
+
+		if a.Client != nil && len(a.Client.GetId()) > 0 {
+			id := a.Client.GetId()
+			client := osin.DefaultClient{}
+			if err = r.loadTxnClient(&client, id)(tx); err == nil {
+				a.Client = &client
+			}
+		}
+		if loadDeps {
+			if a.AuthorizeData != nil && len(a.AuthorizeData.Code) > 0 {
+				auth := osin.AuthorizeData{}
+				if err = r.loadTxnAuthorize(&auth, a.AuthorizeData.Code)(tx); err == nil {
+					a.AuthorizeData = &auth
+				}
+			}
+			if a.RefreshToken != "" {
+				rf := osin.AccessData{}
+				if err = r.loadTxnAccess(&rf, a.RefreshToken, false)(tx); err == nil {
+					a.AccessData = &rf
+				} else {
+					a.AccessData = nil
+				}
+			}
+		}
+		return nil
 	}
 }
 
 // LoadAccess
 func (r *repo) LoadAccess(code string) (*osin.AccessData, error) {
+	if r == nil || r.root == nil {
+		return nil, errNotOpen
+	}
 	if code == "" {
 		return nil, errors.NotFoundf("empty access code")
 	}
 
 	result := new(osin.AccessData)
-	err := r.d.View(r.loadTxnAccess(result, code))
+	err := r.root.View(r.loadTxnAccess(result, code, true))
 	if err != nil {
 		return nil, errors.Annotatef(err, "access code not found")
-	}
-
-	if result.Client != nil && len(result.Client.GetId()) > 0 {
-		id := result.Client.GetId()
-		client, _ := result.Client.(*osin.DefaultClient)
-		if err = r.d.View(r.loadTxnClient(client, id)); err == nil {
-			result.Client = client
-		}
-	}
-	if result.AuthorizeData != nil && len(result.AuthorizeData.Code) > 0 {
-		auth := new(osin.AuthorizeData)
-		if err = r.d.View(r.loadTxnAuthorize(auth, result.AuthorizeData.Code)); err == nil {
-			result.AuthorizeData = auth
-		}
-	}
-	if result.AccessData != nil && len(result.AccessData.AccessToken) > 0 {
-		prev := new(osin.AccessData)
-		if err = r.d.View(r.loadTxnAccess(prev, result.AuthorizeData.Code)); err == nil {
-			result.AccessData = prev
-		}
 	}
 
 	return result, err
@@ -413,7 +452,10 @@ func (r *repo) LoadAccess(code string) (*osin.AccessData, error) {
 
 // RemoveAccess
 func (r *repo) RemoveAccess(token string) error {
-	tx := r.d.NewWriteBatch()
+	if r == nil || r.root == nil {
+		return errNotOpen
+	}
+	tx := r.root.NewWriteBatch()
 	if err := tx.Delete(r.accessPath(token)); err != nil {
 		return err
 	}
@@ -426,12 +468,15 @@ func (r *repo) refreshPath(refresh string) []byte {
 
 // LoadRefresh
 func (r *repo) LoadRefresh(token string) (*osin.AccessData, error) {
+	if r == nil || r.root == nil {
+		return nil, errNotOpen
+	}
 	if token == "" {
 		return nil, errors.NotFoundf("Empty refresh token")
 	}
 
 	refresh := ref{}
-	err := r.d.View(func(tx *badger.Txn) error {
+	err := r.root.View(func(tx *badger.Txn) error {
 		path := r.refreshPath(token)
 		it, err := tx.Get(path)
 		if err != nil {
@@ -452,7 +497,11 @@ func (r *repo) LoadRefresh(token string) (*osin.AccessData, error) {
 
 // RemoveRefresh revokes or deletes refresh AccessData.
 func (r *repo) RemoveRefresh(token string) error {
-	tx := r.d.NewWriteBatch()
+	if r == nil || r.root == nil {
+		return errNotOpen
+	}
+
+	tx := r.root.NewWriteBatch()
 	if err := tx.Delete(r.refreshPath(token)); err != nil {
 		return err
 	}

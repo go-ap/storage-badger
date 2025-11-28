@@ -165,7 +165,7 @@ func Test_repo_Create(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			r := &repo{
-				d:     tt.fields.d,
+				root:  tt.fields.d,
 				path:  tt.fields.path,
 				cache: tt.fields.cache,
 				logFn: emptyLogFn,

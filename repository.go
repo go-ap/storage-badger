@@ -14,7 +14,7 @@ import (
 )
 
 type repo struct {
-	d     *badger.DB
+	root  *badger.DB
 	path  string
 	cache cache.CanStore
 	logFn loggerFn
@@ -73,7 +73,7 @@ func badgerOpenConfig(path string, logFn, errFn loggerFn) badger.Options {
 // Open opens the badger database if possible.
 func (r *repo) Open() error {
 	var err error
-	r.d, err = badger.Open(badgerOpenConfig(r.path, r.logFn, r.errFn))
+	r.root, err = badger.Open(badgerOpenConfig(r.path, r.logFn, r.errFn))
 	if err != nil {
 		err = errors.Annotatef(err, "unable to open storage")
 	}
@@ -82,14 +82,14 @@ func (r *repo) Open() error {
 
 // Close closes the badger database if possible.
 func (r *repo) close() error {
-	if r.d == nil {
+	if r.root == nil {
 		return nil
 	}
 
-	if err := r.d.Sync(); err != nil {
+	if err := r.root.Sync(); err != nil {
 		r.errFn("unable to sync db: %+s", err)
 	}
-	if err := r.d.Close(); err != nil {
+	if err := r.root.Close(); err != nil {
 		r.errFn("error closing the badger db: %+s", err)
 	}
 
@@ -111,8 +111,11 @@ func firstOrItem(it vocab.Item) vocab.Item {
 
 // Load
 func (r *repo) Load(i vocab.IRI, checks ...filters.Check) (vocab.Item, error) {
+	if r == nil || r.root == nil {
+		return nil, errNotOpen
+	}
 	var ret vocab.Item
-	err := r.d.View(func(tx *badger.Txn) error {
+	err := r.root.View(func(tx *badger.Txn) error {
 		it, err := r.loadFromPath(tx, i, checks...)
 		if err != nil {
 			return err
@@ -129,7 +132,7 @@ func (r *repo) Load(i vocab.IRI, checks ...filters.Check) (vocab.Item, error) {
 var errNotOpen = errors.Newf("badger db is not open")
 
 func (r *repo) Create(col vocab.CollectionInterface) (vocab.CollectionInterface, error) {
-	if r.d == nil {
+	if r.root == nil {
 		return nil, errNotOpen
 	}
 	if vocab.IsIRI(col) {
@@ -155,7 +158,7 @@ func onCollection(r *repo, col vocab.Item, fn func(iris vocab.IRIs) (vocab.IRIs,
 	}
 	p := itemPath(col.GetLink())
 
-	return r.d.Update(func(tx *badger.Txn) error {
+	return r.root.Update(func(tx *badger.Txn) error {
 		var iris vocab.IRIs
 
 		rawKey := getItemsKey(p)
@@ -192,6 +195,9 @@ func onCollection(r *repo, col vocab.Item, fn func(iris vocab.IRIs) (vocab.IRIs,
 
 // Save
 func (r *repo) Save(it vocab.Item) (vocab.Item, error) {
+	if r == nil || r.root == nil {
+		return nil, errNotOpen
+	}
 	var err error
 
 	if it, err = save(r, it); err == nil {
@@ -235,7 +241,7 @@ func emptyCollection(colIRI vocab.IRI, owner vocab.Item) vocab.CollectionInterfa
 func createCollection(r *repo, colIRI vocab.IRI, owner vocab.Item) (vocab.CollectionInterface, error) {
 	col := emptyCollection(colIRI, owner)
 
-	err := r.d.Update(func(tx *badger.Txn) error {
+	err := r.root.Update(func(tx *badger.Txn) error {
 		return saveRawItem(tx, col)
 	})
 	if err != nil {
@@ -246,9 +252,12 @@ func createCollection(r *repo, colIRI vocab.IRI, owner vocab.Item) (vocab.Collec
 
 // AddTo
 func (r *repo) AddTo(colIRI vocab.IRI, items ...vocab.Item) error {
+	if r == nil || r.root == nil {
+		return errNotOpen
+	}
 	var col vocab.Item
 	toWrite := make(vocab.ItemCollection, 0)
-	err := r.d.View(func(tx *badger.Txn) error {
+	err := r.root.View(func(tx *badger.Txn) error {
 		maybeCol, err := r.loadOneFromPath(tx, colIRI)
 		if err != nil && !isHiddenCollectionIRI(colIRI) {
 			return err
@@ -275,7 +284,7 @@ func (r *repo) AddTo(colIRI vocab.IRI, items ...vocab.Item) error {
 		return err
 	}
 
-	wb := r.d.NewWriteBatch()
+	wb := r.root.NewWriteBatch()
 	for _, it := range toWrite {
 		if err := writeFromPath(wb, it); err != nil {
 			return err
@@ -300,7 +309,7 @@ const itemsKey = "__items"
 
 func delete(r *repo, it vocab.Item) error {
 	var old vocab.Item
-	err := r.d.View(func(tx *badger.Txn) error {
+	err := r.root.View(func(tx *badger.Txn) error {
 		ob, err := r.loadOneFromPath(tx, it.GetLink())
 		if err != nil {
 			return err
@@ -309,7 +318,7 @@ func delete(r *repo, it vocab.Item) error {
 		return nil
 	})
 
-	tx := r.d.NewWriteBatch()
+	tx := r.root.NewWriteBatch()
 	if err = deleteFromTx(tx, old); err != nil {
 		return err
 	}
@@ -357,7 +366,7 @@ func createCollections(tx *badger.Txn, it vocab.Item) error {
 
 // deleteCollections
 func deleteCollections(r *repo, it vocab.Item) error {
-	tx := r.d.NewWriteBatch()
+	tx := r.root.NewWriteBatch()
 	if vocab.ActorTypes.Contains(it.GetType()) {
 		return vocab.OnActor(it, func(p *vocab.Actor) error {
 			var err error
@@ -382,7 +391,7 @@ func deleteCollections(r *repo, it vocab.Item) error {
 }
 
 func save(r *repo, it vocab.Item) (vocab.Item, error) {
-	err := r.d.Update(func(txn *badger.Txn) error {
+	err := r.root.Update(func(txn *badger.Txn) error {
 		return saveRawItem(txn, it)
 	})
 
@@ -776,15 +785,19 @@ func itemPath(iri vocab.IRI) []byte {
 }
 
 func Path(c Config) (string, error) {
-	if c.Path == "" {
-		return "", nil
+	if err := mkDirIfNotExists(c.Path); err != nil {
+		return c.Path, err
 	}
-	return c.Path, mkDirIfNotExists(c.Path)
+	_, err := os.Stat(c.Path)
+	return c.Path, err
 }
 
+const defaultPerm = os.ModeDir | os.ModePerm | 0x700
+
 func mkDirIfNotExists(p string) error {
-	const defaultPerm = os.ModeDir | os.ModePerm | 0700
-	p, _ = filepath.Abs(p)
+	if p != "" && !filepath.IsAbs(p) {
+		p, _ = filepath.Abs(p)
+	}
 	if fi, err := os.Stat(p); err != nil {
 		if os.IsNotExist(err) {
 			if err = os.MkdirAll(p, defaultPerm); err != nil {

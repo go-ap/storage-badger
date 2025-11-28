@@ -30,22 +30,41 @@ func getMetadataKey(p []byte) []byte {
 
 // PasswordSet
 func (r *repo) PasswordSet(iri vocab.IRI, pw []byte) error {
+	if r == nil || r.root == nil {
+		return errNotOpen
+	}
+	if pw == nil {
+		return errors.Newf("could not generate hash for nil pw")
+	}
 	path := itemPath(iri)
+	if len(path) == 0 {
+		return errors.NotFoundf("not found")
+	}
 
-	err := r.d.Update(func(tx *badger.Txn) error {
-		var err error
+	m := Metadata{}
+	err := r.root.Update(func(tx *badger.Txn) error {
+		path = getMetadataKey(path)
+		i, err := tx.Get(path)
+		if err == nil {
+			err = i.Value(func(raw []byte) error {
+				return decodeFn(raw, &m)
+			})
+			if err != nil {
+				return err
+			}
+		}
+
 		pw, err = bcrypt.GenerateFromPassword(pw, -1)
 		if err != nil {
 			return errors.Annotatef(err, "Could not encrypt the pw")
 		}
-		m := Metadata{
-			Pw: pw,
-		}
+
+		m.Pw = pw
 		entryBytes, err := encodeFn(m)
 		if err != nil {
 			return errors.Annotatef(err, "Could not marshal metadata")
 		}
-		err = tx.Set(getMetadataKey(path), entryBytes)
+		err = tx.Set(path, entryBytes)
 		if err != nil {
 			return errors.Annotatef(err, "Could not insert entry: %s", path)
 		}
@@ -57,21 +76,26 @@ func (r *repo) PasswordSet(iri vocab.IRI, pw []byte) error {
 
 // PasswordCheck
 func (r *repo) PasswordCheck(iri vocab.IRI, pw []byte) error {
+	if r == nil || r.root == nil {
+		return errNotOpen
+	}
 	path := itemPath(iri)
 
 	m := Metadata{}
-	err := r.d.View(func(tx *badger.Txn) error {
+	err := r.root.View(func(tx *badger.Txn) error {
 		i, err := tx.Get(getMetadataKey(path))
 		if err != nil {
-			return errors.Annotatef(err, "Could not find metadata in path %s", path)
+			return errors.NewNotFound(err, "not found")
 		}
-		_ = i.Value(func(raw []byte) error {
-			err := decodeFn(raw, &m)
-			if err != nil {
+		err = i.Value(func(raw []byte) error {
+			if err = decodeFn(raw, &m); err != nil {
 				return errors.Annotatef(err, "Could not unmarshal metadata")
 			}
 			return nil
 		})
+		if err != nil {
+			return err
+		}
 		if err := bcrypt.CompareHashAndPassword(m.Pw, pw); err != nil {
 			return errors.NewUnauthorized(err, "Invalid pw")
 		}
@@ -82,12 +106,15 @@ func (r *repo) PasswordCheck(iri vocab.IRI, pw []byte) error {
 
 // LoadMetadata
 func (r *repo) LoadMetadata(iri vocab.IRI, m any) error {
+	if r == nil || r.root == nil {
+		return errNotOpen
+	}
 	path := itemPath(iri)
 
-	return r.d.View(func(tx *badger.Txn) error {
+	return r.root.View(func(tx *badger.Txn) error {
 		i, err := tx.Get(getMetadataKey(path))
 		if err != nil {
-			return errors.NewNotFound(err, "Could not find metadata in path %s", path)
+			return errors.NewNotFound(err, "not found")
 		}
 		return i.Value(func(raw []byte) error {
 			return decodeFn(raw, &m)
@@ -97,9 +124,15 @@ func (r *repo) LoadMetadata(iri vocab.IRI, m any) error {
 
 // SaveMetadata
 func (r *repo) SaveMetadata(iri vocab.IRI, m any) error {
+	if r == nil || r.root == nil {
+		return errNotOpen
+	}
+	if m == nil {
+		return errors.Newf("Could not save nil metadata")
+	}
 	path := itemPath(iri)
 
-	return r.d.Update(func(tx *badger.Txn) error {
+	return r.root.Update(func(tx *badger.Txn) error {
 		entryBytes, err := encodeFn(m)
 		if err != nil {
 			return errors.Annotatef(err, "Could not marshal metadata")
@@ -114,6 +147,9 @@ func (r *repo) SaveMetadata(iri vocab.IRI, m any) error {
 
 // LoadKey loads a private key for an actor found by its IRI
 func (r *repo) LoadKey(iri vocab.IRI) (crypto.PrivateKey, error) {
+	if r == nil || r.root == nil {
+		return nil, errNotOpen
+	}
 	m := new(Metadata)
 	if err := r.LoadMetadata(iri, m); err != nil {
 		return nil, err
@@ -131,6 +167,9 @@ func (r *repo) LoadKey(iri vocab.IRI) (crypto.PrivateKey, error) {
 
 // SaveKey saves a private key for an actor found by its IRI
 func (r *repo) SaveKey(iri vocab.IRI, key crypto.PrivateKey) (*vocab.PublicKey, error) {
+	if r == nil || r.root == nil {
+		return nil, errNotOpen
+	}
 	m := new(Metadata)
 	if err := r.LoadMetadata(iri, m); err != nil && !errors.IsNotFound(err) {
 		return nil, err
@@ -140,7 +179,6 @@ func (r *repo) SaveKey(iri vocab.IRI, key crypto.PrivateKey) (*vocab.PublicKey, 
 	}
 	prvEnc, err := x509.MarshalPKCS8PrivateKey(key)
 	if err != nil {
-		r.errFn("unable to x509.MarshalPKCS8PrivateKey() the private key %T for %s", key, iri)
 		return nil, err
 	}
 
@@ -149,7 +187,6 @@ func (r *repo) SaveKey(iri vocab.IRI, key crypto.PrivateKey) (*vocab.PublicKey, 
 		Bytes: prvEnc,
 	})
 	if err = r.SaveMetadata(iri, m); err != nil {
-		r.errFn("unable to save the private key %T for %s", key, iri)
 		return nil, err
 	}
 
