@@ -2,6 +2,7 @@ package badger
 
 import (
 	"fmt"
+	"os"
 	"testing"
 	"time"
 
@@ -297,6 +298,57 @@ func Test_repo_Load(t *testing.T) {
 			}
 		})
 	}
+}
+
+func Test_New(t *testing.T) {
+	dir := os.TempDir()
+
+	conf := Config{
+		Path:  dir,
+		LogFn: func(s string, p ...interface{}) { t.Logf(s, p...) },
+		ErrFn: func(s string, p ...interface{}) { t.Errorf(s, p...) },
+	}
+	repo, _ := New(conf)
+	if repo == nil {
+		t.Errorf("Nil result from opening boltdb %s", conf.Path)
+		return
+	}
+	if repo.root != nil {
+		t.Errorf("Non nil boltdb from New")
+	}
+	if repo.errFn == nil {
+		t.Errorf("Nil error log function, expected %T[%p]", t.Errorf, t.Errorf)
+	}
+	if repo.logFn == nil {
+		t.Errorf("Nil log function, expected %T[%p]", t.Logf, t.Logf)
+	}
+}
+
+func TestRepo_Close(t *testing.T) {
+	dir := os.TempDir()
+	conf := Config{
+		Path: dir,
+	}
+	path, _ := Path(conf)
+	err := Bootstrap(conf)
+	if err != nil {
+		t.Errorf("Unable to bootstrap boltdb %s: %s", path, err)
+	}
+	defer os.Remove(path)
+
+	repo, err := New(conf)
+	if err != nil {
+		t.Errorf("Error initializing db: %s", err)
+	}
+	err = repo.Open()
+	if err != nil {
+		t.Errorf("Unable to open boltdb %s: %s", path, err)
+	}
+	err = repo.close()
+	if err != nil {
+		t.Errorf("Unable to close boltdb %s: %s", path, err)
+	}
+	os.Remove(path)
 }
 
 func Test_repo_Save(t *testing.T) {
