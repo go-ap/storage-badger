@@ -238,18 +238,6 @@ func emptyCollection(colIRI vocab.IRI, owner vocab.Item) vocab.CollectionInterfa
 	return &col
 }
 
-func createCollection(r *repo, colIRI vocab.IRI, owner vocab.Item) (vocab.CollectionInterface, error) {
-	col := emptyCollection(colIRI, owner)
-
-	err := r.root.Update(func(tx *badger.Txn) error {
-		return saveRawItem(tx, col)
-	})
-	if err != nil {
-		return nil, err
-	}
-	return col, nil
-}
-
 // AddTo
 func (r *repo) AddTo(colIRI vocab.IRI, items ...vocab.Item) error {
 	if r == nil || r.root == nil {
@@ -362,32 +350,6 @@ func createCollections(tx *badger.Txn, it vocab.Item) error {
 		}
 		return nil
 	})
-}
-
-// deleteCollections
-func deleteCollections(r *repo, it vocab.Item) error {
-	tx := r.root.NewWriteBatch()
-	if vocab.ActorTypes.Contains(it.GetType()) {
-		return vocab.OnActor(it, func(p *vocab.Actor) error {
-			var err error
-			err = deleteFromTx(tx, vocab.Inbox.IRI(p))
-			err = deleteFromTx(tx, vocab.Outbox.IRI(p))
-			err = deleteFromTx(tx, vocab.Followers.IRI(p))
-			err = deleteFromTx(tx, vocab.Following.IRI(p))
-			err = deleteFromTx(tx, vocab.Liked.IRI(p))
-			return err
-		})
-	}
-	if vocab.ObjectTypes.Contains(it.GetType()) {
-		return vocab.OnObject(it, func(o *vocab.Object) error {
-			var err error
-			err = deleteFromTx(tx, vocab.Replies.IRI(o))
-			err = deleteFromTx(tx, vocab.Likes.IRI(o))
-			err = deleteFromTx(tx, vocab.Shares.IRI(o))
-			return err
-		})
-	}
-	return tx.Flush()
 }
 
 func save(r *repo, it vocab.Item) (vocab.Item, error) {
@@ -527,17 +489,6 @@ func (r *repo) loadFromItem(tx *badger.Txn, into *vocab.ItemCollection, iri voca
 				return nil
 			})
 		} else {
-			if it.GetType() == vocab.CreateType {
-				// TODO(marius): this seems terribly not nice
-				_ = vocab.OnActivity(it, func(a *vocab.Activity) error {
-					if !a.Object.IsObject() {
-						ob, _ := r.loadOneFromPath(tx, a.Object.GetLink())
-						a.Object = ob
-					}
-					return nil
-				})
-			}
-
 			if !vocab.IsNil(it) {
 				if vocab.ActorTypes.Contains(it.GetType()) {
 					_ = vocab.OnActor(it, loadFilteredPropsForActor(r, tx, f...))
@@ -617,6 +568,7 @@ var sep = []byte{'/'}
 func isObjectKey(k []byte) bool {
 	return bytes.HasSuffix(k, []byte(objectKey))
 }
+
 func isItemsKey(k []byte) bool {
 	return bytes.HasSuffix(k, []byte(itemsKey))
 }
