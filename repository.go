@@ -198,6 +198,10 @@ func (r *repo) Save(it vocab.Item) (vocab.Item, error) {
 	if r == nil || r.root == nil {
 		return nil, errNotOpen
 	}
+	if vocab.IsNil(it) {
+		return nil, errors.Newf("Unable to save nil element")
+	}
+
 	var err error
 
 	if it, err = save(r, it); err == nil {
@@ -234,6 +238,12 @@ func emptyCollection(colIRI vocab.IRI, owner vocab.Item) vocab.CollectionInterfa
 	}
 	if !vocab.IsNil(owner) {
 		col.AttributedTo = owner.GetLink()
+		_ = vocab.OnObject(owner, func(ob *vocab.Object) error {
+			if !ob.Published.IsZero() {
+				col.Published = ob.Published
+			}
+			return nil
+		})
 	}
 	return &col
 }
@@ -360,19 +370,6 @@ func save(r *repo, it vocab.Item) (vocab.Item, error) {
 	return it, err
 }
 
-func rawCollection(colIRI vocab.IRI, owner vocab.Item) vocab.OrderedCollection {
-	col := vocab.OrderedCollection{
-		ID:        colIRI,
-		Type:      vocab.OrderedCollectionType,
-		CC:        vocab.ItemCollection{vocab.PublicNS},
-		Published: time.Now().UTC(),
-	}
-	if !vocab.IsNil(owner) {
-		col.AttributedTo = owner.GetLink()
-	}
-	return col
-}
-
 var collectionTypes = vocab.ActivityVocabularyTypes{
 	vocab.CollectionType,
 	vocab.OrderedCollectionType,
@@ -418,7 +415,7 @@ func createCollectionInPath(txn *badger.Txn, it vocab.Item, owner vocab.Item) (v
 	}
 
 	if vocab.IsIRI(it) {
-		it = rawCollection(it.GetLink(), owner)
+		it = emptyCollection(it.GetLink(), owner)
 	}
 
 	if err := saveRawItem(txn, it); err != nil {

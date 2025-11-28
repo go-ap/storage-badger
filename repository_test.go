@@ -8,6 +8,8 @@ import (
 	"github.com/dgraph-io/badger/v4"
 	vocab "github.com/go-ap/activitypub"
 	"github.com/go-ap/cache"
+	"github.com/go-ap/errors"
+	"github.com/go-ap/filters"
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
 )
@@ -187,6 +189,166 @@ func Test_repo_Create(t *testing.T) {
 			}
 			if !cmp.Equal(loaded, tt.want) {
 				t.Errorf("Loaded collection after Create() got = %s", cmp.Diff(tt.want, loaded))
+			}
+		})
+	}
+}
+
+func Test_repo_Load(t *testing.T) {
+	// NOTE(marius): happy path tests for a fully mocked repo
+	r := mockRepo(t, fields{path: t.TempDir()}, withOpenRoot, withGeneratedMocks)
+	t.Cleanup(r.Close)
+
+	type args struct {
+		iri vocab.IRI
+		fil filters.Checks
+	}
+	tests := []struct {
+		name    string
+		args    args
+		want    vocab.Item
+		wantErr error
+	}{
+		{
+			name:    "empty",
+			args:    args{iri: ""},
+			want:    nil,
+			wantErr: errors.NotFoundf("file not found"),
+		},
+		{
+			name:    "empty iri gives us not found",
+			args:    args{iri: ""},
+			want:    nil,
+			wantErr: errors.NotFoundf("file not found"),
+		},
+		{
+			name: "root iri gives us the root",
+			args: args{iri: "https://example.com"},
+			want: root,
+		},
+		{
+			name:    "invalid iri gives 404",
+			args:    args{iri: "https://example.com/dsad"},
+			want:    nil,
+			wantErr: errors.NotFoundf("dsad not found"),
+		},
+		{
+			name: "first Person",
+			args: args{iri: "https://example.com/person/1"},
+			want: filter(*allActors.Load(), filters.HasType("Person")).First(),
+		},
+		{
+			name: "first Follow",
+			args: args{iri: "https://example.com/follow/1"},
+			want: filter(*allActivities.Load(), filters.HasType("Follow")).First(),
+		},
+		{
+			name: "first Image",
+			args: args{iri: "https://example.com/image/1"},
+			want: filter(*allObjects.Load(), filters.SameID("https://example.com/image/1")).First(),
+		},
+		{
+			name: "full outbox",
+			args: args{iri: rootOutboxIRI},
+			want: wantsRootOutbox(),
+		},
+		{
+			name: "limit to max 2 things",
+			args: args{
+				iri: rootOutboxIRI,
+				fil: filters.Checks{filters.WithMaxCount(2)},
+			},
+			want: wantsRootOutboxPage(2, filters.WithMaxCount(2)),
+		},
+		{
+			name: "inbox?type=Create",
+			args: args{
+				iri: rootOutboxIRI,
+				fil: filters.Checks{
+					filters.HasType(vocab.CreateType),
+				},
+			},
+			want: wantsRootOutbox(filters.HasType(vocab.CreateType)),
+		},
+		{
+			name: "inbox?type=Create&actor.name=Hank",
+			args: args{
+				iri: rootOutboxIRI,
+				fil: filters.Checks{
+					filters.HasType(vocab.CreateType),
+					filters.Actor(filters.NameIs("Hank")),
+				},
+			},
+			want: wantsRootOutbox(
+				filters.HasType(vocab.CreateType),
+				filters.Actor(filters.NameIs("Hank")),
+			),
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got, err := r.Load(tt.args.iri, tt.args.fil...)
+			if !errors.Is(err, tt.wantErr) {
+				t.Errorf("Load() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+			if !cmp.Equal(tt.want, got, EquateItemCollections) {
+				t.Errorf("Load() got = %s", cmp.Diff(tt.want, got, EquateItemCollections))
+			}
+		})
+	}
+}
+
+func Test_repo_Save(t *testing.T) {
+	type test struct {
+		name     string
+		fields   fields
+		setupFns []initFn
+		it       vocab.Item
+		want     vocab.Item
+		wantErr  error
+	}
+	tests := []test{
+		{
+			name:    "empty",
+			fields:  fields{},
+			wantErr: errNotOpen,
+		},
+		{
+			name:     "empty item can't be saved",
+			fields:   fields{path: t.TempDir()},
+			setupFns: []initFn{withOpenRoot},
+			wantErr:  errors.Newf("Unable to save nil element"),
+		},
+		{
+			name:     "save item collection",
+			setupFns: []initFn{withOpenRoot},
+			fields:   fields{path: t.TempDir()},
+			it:       mockItems,
+			want:     mockItems,
+		},
+	}
+	for i, mockIt := range mockItems {
+		tests = append(tests, test{
+			name:     fmt.Sprintf("save %d %T to repo", i, mockIt),
+			setupFns: []initFn{withOpenRoot},
+			fields:   fields{path: t.TempDir()},
+			it:       mockIt,
+			want:     mockIt,
+		})
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			r := mockRepo(t, tt.fields, tt.setupFns...)
+			t.Cleanup(r.Close)
+
+			got, err := r.Save(tt.it)
+			if !cmp.Equal(err, tt.wantErr, EquateWeakErrors) {
+				t.Errorf("Save() error = %s", cmp.Diff(tt.wantErr, err))
+				return
+			}
+			if !cmp.Equal(got, tt.want) {
+				t.Errorf("Save() got = %s", cmp.Diff(tt.want, got))
 			}
 		})
 	}
