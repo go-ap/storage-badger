@@ -262,7 +262,7 @@ func Test_repo_Load(t *testing.T) {
 			want: wantsRootOutboxPage(2, filters.WithMaxCount(2)),
 		},
 		{
-			name: "inbox?type=Create",
+			name: "outbox?type=Create",
 			args: args{
 				iri: rootOutboxIRI,
 				fil: filters.Checks{
@@ -272,7 +272,7 @@ func Test_repo_Load(t *testing.T) {
 			want: wantsRootOutbox(filters.HasType(vocab.CreateType)),
 		},
 		{
-			name: "inbox?type=Create&actor.name=Hank",
+			name: "outbox?type=Create&actor.name=Hank",
 			args: args{
 				iri: rootOutboxIRI,
 				fil: filters.Checks{
@@ -283,6 +283,60 @@ func Test_repo_Load(t *testing.T) {
 			want: wantsRootOutbox(
 				filters.HasType(vocab.CreateType),
 				filters.Actor(filters.NameIs("Hank")),
+			),
+		},
+		{
+			name: "outbox?type=Create&object.tag=-",
+			args: args{
+				iri: rootOutboxIRI,
+				fil: filters.Checks{
+					filters.Object(filters.Tag(filters.NilID)),
+				},
+			},
+			want: wantsRootOutbox(
+				filters.Object(filters.Tag(filters.NilID)),
+			),
+		},
+		{
+			name: "outbox?type=Create&object.tag.name=#test",
+			args: args{
+				iri: rootOutboxIRI,
+				fil: filters.Checks{
+					filters.HasType(vocab.CreateType),
+					filters.Object(filters.Tag(filters.NameIs("#test"))),
+				},
+			},
+			want: wantsRootOutbox(
+				filters.HasType(vocab.CreateType),
+				filters.Object(filters.Tag(filters.NameIs("#test"))),
+			),
+		},
+		{
+			name: "outbox?type=Question&target.type=Note",
+			args: args{
+				iri: rootOutboxIRI,
+				fil: filters.Checks{
+					filters.HasType(vocab.QuestionType),
+					filters.Target(filters.HasType(vocab.ImageType)),
+				},
+			},
+			want: wantsRootOutbox(
+				filters.HasType(vocab.CreateType),
+				filters.Object(filters.HasType(vocab.NoteType)),
+			),
+		},
+		{
+			name: "outbox?type=Create&object.type=Note",
+			args: args{
+				iri: rootOutboxIRI,
+				fil: filters.Checks{
+					filters.HasType(vocab.CreateType),
+					filters.Actor(filters.NameIs("Hank")),
+				},
+			},
+			want: wantsRootOutbox(
+				filters.HasType(vocab.CreateType),
+				filters.Object(filters.HasType(vocab.NoteType)),
 			),
 		},
 	}
