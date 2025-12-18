@@ -86,9 +86,6 @@ func (r *repo) close() error {
 		return nil
 	}
 
-	if err := r.root.Sync(); err != nil {
-		r.errFn("unable to sync db: %+s", err)
-	}
 	if err := r.root.Close(); err != nil {
 		r.errFn("error closing the badger db: %+s", err)
 	}
