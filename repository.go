@@ -72,6 +72,9 @@ func badgerOpenConfig(path string, logFn, errFn loggerFn) badger.Options {
 
 // Open opens the badger database if possible.
 func (r *repo) Open() error {
+	if r == nil {
+		return errors.Newf("Unable to open uninitialized db")
+	}
 	var err error
 	r.root, err = badger.Open(badgerOpenConfig(r.path, r.logFn, r.errFn))
 	if err != nil {
@@ -82,6 +85,9 @@ func (r *repo) Open() error {
 
 // Close closes the badger database if possible.
 func (r *repo) close() error {
+	if r == nil {
+		return errors.Newf("Unable to close uninitialized db")
+	}
 	if r.root == nil {
 		return nil
 	}
