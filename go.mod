@@ -4,10 +4,10 @@ go 1.25
 
 require (
 	github.com/dgraph-io/badger/v4 v4.9.0
-	github.com/go-ap/activitypub v0.0.0-20260115142526-c0e6aa6744cc
+	github.com/go-ap/activitypub v0.0.0-20260123105353-38736987d071
 	github.com/go-ap/cache v0.0.0-20260115142614-f5f3c7970085
 	github.com/go-ap/errors v0.0.0-20251229095444-2702aa2d8569
-	github.com/go-ap/filters v0.0.0-20260115142717-20ef6131898d
+	github.com/go-ap/filters v0.0.0-20260124112747-f1400f81a7a6
 	github.com/go-ap/storage-conformance-suite v0.0.0-20260107120635-5332e51eadc5
 	github.com/google/go-cmp v0.7.0
 	github.com/openshift/osin v1.0.2-0.20220317075346-0f4d38c6e53f
@@ -25,7 +25,7 @@ require (
 	github.com/charmbracelet/x/ansi v0.9.2 // indirect
 	github.com/charmbracelet/x/cellbuf v0.0.13 // indirect
 	github.com/charmbracelet/x/term v0.2.1 // indirect
-	github.com/dgraph-io/ristretto/v2 v2.3.0 // indirect
+	github.com/dgraph-io/ristretto/v2 v2.4.0 // indirect
 	github.com/dustin/go-humanize v1.0.1 // indirect
 	github.com/go-ap/jsonld v0.0.0-20251216162253-e38fa664ea77 // indirect
 	github.com/go-logr/logr v1.4.3 // indirect
@@ -33,7 +33,7 @@ require (
 	github.com/google/flatbuffers v25.12.19+incompatible // indirect
 	github.com/google/uuid v1.6.0 // indirect
 	github.com/jdkato/prose v1.2.1 // indirect
-	github.com/klauspost/compress v1.18.2 // indirect
+	github.com/klauspost/compress v1.18.3 // indirect
 	github.com/lucasb-eyer/go-colorful v1.2.0 // indirect
 	github.com/mariusor/qstring v0.0.0-20200204164351-5a99d46de39d // indirect
 	github.com/mattn/go-isatty v0.0.20 // indirect
