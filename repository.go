@@ -331,7 +331,7 @@ func createCollections(tx *badger.Txn, it vocab.Item) error {
 	if vocab.IsNil(it) || !it.IsObject() {
 		return nil
 	}
-	if vocab.ActorTypes.Contains(it.GetType()) {
+	if typ := it.GetType(); typ != nil && vocab.ActorTypes.Match(typ) {
 		_ = vocab.OnActor(it, func(p *vocab.Actor) error {
 			if p.Inbox != nil {
 				p.Inbox, _ = createCollectionInPath(tx, p.Inbox, p)
@@ -401,7 +401,7 @@ func saveRawItem(txn *badger.Txn, it vocab.Item) error {
 		if err = createCollections(txn, it); err != nil {
 			return errors.Annotatef(err, "could not create object's collections")
 		}
-		if collectionTypes.Contains(it.GetType()) {
+		if collectionTypes.Match(it.GetType()) {
 			colItemsKey := getItemsKey(itemPath(it.GetLink()))
 			if err = txn.Set(colItemsKey, emptyJsonCollection); err != nil {
 				return err
@@ -490,16 +490,17 @@ func (r *repo) loadFromItem(tx *badger.Txn, into *vocab.ItemCollection, iri voca
 			})
 		} else {
 			if !vocab.IsNil(it) {
-				if vocab.ActorTypes.Contains(it.GetType()) {
+				typ := it.GetType()
+				if vocab.ActorTypes.Match(typ) {
 					_ = vocab.OnActor(it, loadFilteredPropsForActor(r, tx, f...))
 				}
-				if vocab.ObjectTypes.Contains(it.GetType()) {
+				if vocab.ObjectTypes.Match(typ) {
 					_ = vocab.OnObject(it, loadFilteredPropsForObject(r, tx, f...))
 				}
-				if vocab.IntransitiveActivityTypes.Contains(it.GetType()) {
+				if vocab.IntransitiveActivityTypes.Match(typ) {
 					_ = vocab.OnIntransitiveActivity(it, loadFilteredPropsForIntransitiveActivity(r, tx, f...))
 				}
-				if vocab.ActivityTypes.Contains(it.GetType()) {
+				if vocab.ActivityTypes.Match(typ) {
 					_ = vocab.OnActivity(it, loadFilteredPropsForActivity(r, tx, f...))
 				}
 				if !into.Contains(it.GetLink()) {
