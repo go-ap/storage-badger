@@ -29,14 +29,16 @@ type cl struct {
 }
 
 type auth struct {
-	Client      string
-	Code        string
-	ExpiresIn   time.Duration
-	Scope       string
-	RedirectURI string
-	State       string
-	CreatedAt   time.Time
-	Extra       interface{}
+	Client              string
+	Code                string
+	ExpiresIn           time.Duration
+	Scope               string
+	RedirectURI         string
+	State               string
+	CreatedAt           time.Time
+	Extra               interface{}
+	CodeChallengeMethod string
+	CodeChallenge       string
 }
 
 type acc struct {
@@ -216,14 +218,16 @@ func (r *repo) SaveAuthorize(data *osin.AuthorizeData) error {
 		return errors.Newf("unable to save nil authorization data")
 	}
 	auth := auth{
-		Client:      data.Client.GetId(),
-		Code:        data.Code,
-		ExpiresIn:   time.Duration(data.ExpiresIn),
-		Scope:       data.Scope,
-		RedirectURI: data.RedirectUri,
-		State:       data.State,
-		CreatedAt:   data.CreatedAt.UTC(),
-		Extra:       data.UserData,
+		Client:              data.Client.GetId(),
+		Code:                data.Code,
+		ExpiresIn:           time.Duration(data.ExpiresIn),
+		Scope:               data.Scope,
+		RedirectURI:         data.RedirectUri,
+		State:               data.State,
+		CreatedAt:           data.CreatedAt.UTC(),
+		Extra:               data.UserData,
+		CodeChallenge:       data.CodeChallenge,
+		CodeChallengeMethod: data.CodeChallengeMethod,
 	}
 	raw, err := encodeFn(auth)
 	if err != nil {
@@ -270,6 +274,8 @@ func loadRawAuthorize(a *osin.AuthorizeData) func(raw []byte) error {
 		a.RedirectUri = auth.RedirectURI
 		a.State = auth.State
 		a.CreatedAt = auth.CreatedAt
+		a.CodeChallenge = auth.CodeChallenge
+		a.CodeChallengeMethod = auth.CodeChallengeMethod
 		if len(auth.Code) > 0 {
 			a.Client = &osin.DefaultClient{Id: auth.Client}
 		}
