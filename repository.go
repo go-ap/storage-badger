@@ -163,6 +163,24 @@ func onCollection(r *repo, col vocab.Item, fn func(iris vocab.IRIs) (vocab.IRIs,
 
 	return r.root.Update(func(tx *badger.Txn) error {
 		var iris vocab.IRIs
+		colKey := getObjectKey(p)
+
+		var c *vocab.OrderedCollection
+		i, err := tx.Get(colKey)
+		if err != nil {
+			return errors.Annotatef(err, "Unable load collection %s", p)
+		}
+		err = i.Value(func(raw []byte) error {
+			it, err := decodeItemFn(raw)
+			if err != nil {
+				return err
+			}
+			c, err = vocab.ToOrderedCollection(it)
+			return err
+		})
+		if err != nil {
+			return errors.Annotatef(err, "Unable decode collection %s", p)
+		}
 
 		rawKey := getItemsKey(p)
 		if i, err := tx.Get(rawKey); err == nil {
@@ -172,17 +190,16 @@ func onCollection(r *repo, col vocab.Item, fn func(iris vocab.IRIs) (vocab.IRIs,
 					return errors.Annotatef(err, "Unable to unmarshal collection %s", p)
 				}
 
-				err = vocab.OnIRIs(colItems, func(col *vocab.IRIs) error {
+				return vocab.OnIRIs(colItems, func(col *vocab.IRIs) error {
 					iris = *col
 					return nil
 				})
-				if err != nil {
-					return errors.Annotatef(err, "Unable to unmarshal to IRI collection %s", p)
-				}
-				return nil
 			})
+			if err != nil {
+				return err
+			}
 		}
-		var err error
+
 		iris, err = fn(iris)
 		if err != nil {
 			return errors.Annotatef(err, "Unable operate on collection %s", p)
@@ -192,7 +209,18 @@ func onCollection(r *repo, col vocab.Item, fn func(iris vocab.IRIs) (vocab.IRIs,
 		if err != nil {
 			return errors.Newf("Unable to marshal entries in collection %s", p)
 		}
-		return tx.Set(rawKey, raw)
+
+		if err = tx.Set(rawKey, raw); err != nil {
+			return errors.Newf("Unable to save entries in collection %s", p)
+		}
+
+		c.TotalItems = iris.Count()
+
+		raw, err = encodeItemFn(c)
+		if err != nil {
+			return errors.Newf("Unable to encode collection %s", p)
+		}
+		return tx.Set(getObjectKey(p), raw)
 	})
 }
 
@@ -274,7 +302,7 @@ func (r *repo) AddTo(colIRI vocab.IRI, items ...vocab.Item) error {
 			_ = toWrite.Append(col)
 		}
 		for _, it := range items {
-			_, err = r.loadItem(tx, getObjectKey(itemPath(it.GetLink())))
+			_, err = r.loadItem(tx, getObjectKey(itemPath(it.GetLink())), nil)
 			if err != nil && errors.IsNotFound(err) && !vocab.IsIRI(it) {
 				_ = toWrite.Append(it)
 			}
@@ -463,49 +491,45 @@ func (r *repo) loadFromItem(tx *badger.Txn, into *vocab.ItemCollection, iri voca
 		if err != nil || vocab.IsNil(it) {
 			return errors.NewNotFound(err, "not found")
 		}
-		if !it.IsObject() && it.IsLink() {
-			c, err := r.loadItemsByIRIs(tx, iri, it.GetLink())
-			if err != nil {
-				return err
-			}
-			for _, it := range c {
-				if into.Contains(it.GetLink()) {
-					continue
-				}
-				*into = append(*into, it)
-			}
-		} else if it.IsCollection() {
+		switch {
+		case it.IsCollection():
 			return vocab.OnOrderedCollection(it, func(ci *vocab.OrderedCollection) error {
-				c, err := r.loadCollectionItems(tx, ci.ID)
+				c, err := r.loadCollectionItems(tx, ci.ID, f...)
 				if err != nil {
 					return err
 				}
 				ci.ID = iri
 				if len(c) > 0 {
 					ci.OrderedItems = c
-					ci.TotalItems = uint(len(c))
 				}
-				*into = append(*into, ci)
+				_ = into.Append(it)
 				return nil
 			})
-		} else {
-			if !vocab.IsNil(it) {
-				typ := it.GetType()
-				if vocab.ActorTypes.Match(typ) {
-					_ = vocab.OnActor(it, loadFilteredPropsForActor(r, tx, f...))
-				}
-				if vocab.ObjectTypes.Match(typ) {
-					_ = vocab.OnObject(it, loadFilteredPropsForObject(r, tx, f...))
-				}
-				if vocab.IntransitiveActivityTypes.Match(typ) {
-					_ = vocab.OnIntransitiveActivity(it, loadFilteredPropsForIntransitiveActivity(r, tx, f...))
-				}
-				if vocab.ActivityTypes.Match(typ) {
-					_ = vocab.OnActivity(it, loadFilteredPropsForActivity(r, tx, f...))
-				}
-				if !into.Contains(it.GetLink()) {
-					*into = append(*into, it)
-				}
+		case !it.IsObject() && it.IsLink():
+			c, err := r.loadItemsByIRIs(tx, nil, it.GetLink())
+			if err != nil {
+				return err
+			}
+			for _, it := range c {
+				_ = into.Append(it)
+			}
+		}
+		if !vocab.IsNil(it) {
+			typ := it.GetType()
+			if vocab.ActorTypes.Match(typ) {
+				_ = vocab.OnActor(it, loadFilteredPropsForActor(r, tx, f...))
+			}
+			if vocab.ObjectTypes.Match(typ) {
+				_ = vocab.OnObject(it, loadFilteredPropsForObject(r, tx, f...))
+			}
+			if vocab.IntransitiveActivityTypes.Match(typ) {
+				_ = vocab.OnIntransitiveActivity(it, loadFilteredPropsForIntransitiveActivity(r, tx, f...))
+			}
+			if vocab.ActivityTypes.Match(typ) {
+				_ = vocab.OnActivity(it, loadFilteredPropsForActivity(r, tx, f...))
+			}
+			if !into.Contains(it.GetLink()) {
+				*into = append(*into, it)
 			}
 		}
 		return nil
@@ -624,10 +648,10 @@ func getItemsKey(p []byte) []byte {
 	return bytes.Join([][]byte{p, []byte(itemsKey)}, sep)
 }
 
-func (r *repo) loadItemsByIRIs(tx *badger.Txn, iris ...vocab.Item) (vocab.ItemCollection, error) {
+func (r *repo) loadItemsByIRIs(tx *badger.Txn, checkFn func([]byte) bool, iris ...vocab.Item) (vocab.ItemCollection, error) {
 	col := make(vocab.ItemCollection, 0)
 	for _, iri := range iris {
-		it, err := r.loadItem(tx, itemPath(iri.GetLink()))
+		it, err := r.loadItem(tx, itemPath(iri.GetLink()), checkFn)
 		if err != nil || vocab.IsNil(it) || col.Contains(it.GetLink()) {
 			continue
 		}
@@ -636,10 +660,11 @@ func (r *repo) loadItemsByIRIs(tx *badger.Txn, iris ...vocab.Item) (vocab.ItemCo
 	return col, nil
 }
 
-func (r *repo) loadCollectionItems(tx *badger.Txn, colIRI vocab.IRI) (vocab.ItemCollection, error) {
+func (r *repo) loadCollectionItems(tx *badger.Txn, colIRI vocab.IRI, ff ...filters.Check) (vocab.ItemCollection, error) {
 	col := make(vocab.ItemCollection, 0)
 	path := itemPath(colIRI)
 
+	checkFn := filters.RawMatcher(ff)
 	if isStorageCollectionKey(path) {
 		depth := 1
 		if vocab.ValidCollectionIRI(colIRI) {
@@ -650,6 +675,14 @@ func (r *repo) loadCollectionItems(tx *badger.Txn, colIRI vocab.IRI) (vocab.Item
 		it := tx.NewIterator(opt)
 		defer it.Close()
 		pathExists := false
+
+		checkAndLoad := func(val []byte) error {
+			if checkFn(val) {
+				return r.loadFromItem(tx, &col, "", ff...)(val)
+			}
+			return nil
+		}
+
 		for it.Seek(path); it.ValidForPrefix(path); it.Next() {
 			i := it.Item()
 			k := i.Key()
@@ -659,7 +692,7 @@ func (r *repo) loadCollectionItems(tx *badger.Txn, colIRI vocab.IRI) (vocab.Item
 			}
 
 			if isObjectKey(k) {
-				if err := i.Value(r.loadFromItem(tx, &col, "", nil)); err != nil {
+				if err := i.Value(checkAndLoad); err != nil {
 					r.errFn("unable to load item %s: %+s", k, err)
 					continue
 				}
@@ -694,10 +727,10 @@ func (r *repo) loadCollectionItems(tx *badger.Txn, colIRI vocab.IRI) (vocab.Item
 		return col, nil
 	}
 
-	return r.loadItemsByIRIs(tx, col...)
+	return r.loadItemsByIRIs(tx, checkFn, col...)
 }
 
-func (r *repo) loadItem(tx *badger.Txn, path []byte) (vocab.Item, error) {
+func (r *repo) loadItem(tx *badger.Txn, path []byte, checkFn func([]byte) bool) (vocab.Item, error) {
 	i, err := tx.Get(getObjectKey(path))
 	if err != nil {
 		return nil, errors.NewNotFound(err, "Unable to load path %s", path)
@@ -707,6 +740,9 @@ func (r *repo) loadItem(tx *badger.Txn, path []byte) (vocab.Item, error) {
 		raw = val
 		return nil
 	})
+	if checkFn != nil && !checkFn(raw) {
+		return nil, nil
+	}
 	if raw == nil {
 		return nil, nil
 	}

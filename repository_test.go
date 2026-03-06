@@ -290,11 +290,11 @@ func Test_repo_Load(t *testing.T) {
 			args: args{
 				iri: rootOutboxIRI,
 				fil: filters.Checks{
-					filters.Object(filters.Tag(filters.NilID)),
+					filters.Object(filters.Tag(filters.NilItem)),
 				},
 			},
 			want: wantsRootOutbox(
-				filters.Object(filters.Tag(filters.NilID)),
+				filters.Object(filters.Tag(filters.NilItem)),
 			),
 		},
 		{
