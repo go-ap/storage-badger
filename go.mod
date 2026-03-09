@@ -4,10 +4,10 @@ go 1.25.0
 
 require (
 	github.com/dgraph-io/badger/v4 v4.9.1
-	github.com/go-ap/activitypub v0.0.0-20260217161652-7bec47e1f870
-	github.com/go-ap/cache v0.0.0-20260217161741-05770d6d0773
+	github.com/go-ap/activitypub v0.0.0-20260309180253-5f9949892033
+	github.com/go-ap/cache v0.0.0-20260309180527-f2e7bd7e14c5
 	github.com/go-ap/errors v0.0.0-20260208110149-e1b309365966
-	github.com/go-ap/filters v0.0.0-20260307142424-44b629447fc4
+	github.com/go-ap/filters v0.0.0-20260309180622-bea723110f0f
 	github.com/go-ap/storage-conformance-suite v0.0.0-20260224104644-d108133388c0
 	github.com/google/go-cmp v0.7.0
 	github.com/openshift/osin v1.0.2-0.20220317075346-0f4d38c6e53f
@@ -51,7 +51,7 @@ require (
 	go.opentelemetry.io/otel/metric v1.42.0 // indirect
 	go.opentelemetry.io/otel/trace v1.42.0 // indirect
 	golang.org/x/net v0.51.0 // indirect
-	golang.org/x/sys v0.41.0 // indirect
+	golang.org/x/sys v0.42.0 // indirect
 	golang.org/x/term v0.40.0 // indirect
 	golang.org/x/text v0.34.0 // indirect
 	google.golang.org/protobuf v1.36.11 // indirect
