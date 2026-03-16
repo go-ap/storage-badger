@@ -56,7 +56,7 @@ require (
 	golang.org/x/text v0.35.0 // indirect
 	google.golang.org/protobuf v1.36.11 // indirect
 	gopkg.in/neurosnap/sentences.v1 v1.0.7 // indirect
-	quamina.net/go/quamina v1.5.2-0.20260219224429-4b74c3864009 // indirect
+	quamina.net/go/quamina v1.5.2-0.20260306081357-88daf10bf1dc // indirect
 )
 
 replace go.opencensus.io => github.com/census-instrumentation/opencensus-go v0.23.0
