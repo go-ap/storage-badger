@@ -117,7 +117,7 @@ func Test_repo_AddTo(t *testing.T) {
 			}
 			for _, expected := range tt.args.it {
 				err := vocab.OnCollectionIntf(res, func(col vocab.CollectionInterface) error {
-					if col.Contains(expected) {
+					if col.Collection().IRIs().Contains(expected) {
 						return nil
 					}
 					return fmt.Errorf("unable to find expected item in loaded collection: %s", expected.GetLink())
