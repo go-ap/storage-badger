@@ -4,11 +4,11 @@ go 1.25.0
 
 require (
 	github.com/dgraph-io/badger/v4 v4.9.1
-	github.com/go-ap/activitypub v0.0.0-20260330133938-2e4972ff690b
-	github.com/go-ap/cache v0.0.0-20260330121019-04b4f2f27195
+	github.com/go-ap/activitypub v0.0.0-20260402093412-528d4eaf86a8
+	github.com/go-ap/cache v0.0.0-20260402093807-65da0efac70f
 	github.com/go-ap/errors v0.0.0-20260208110149-e1b309365966
-	github.com/go-ap/filters v0.0.0-20260330134234-a70aa1bf886d
-	github.com/go-ap/storage-conformance-suite v0.0.0-20260330134316-7e2ac19ccca2
+	github.com/go-ap/filters v0.0.0-20260402093843-285aba89aa03
+	github.com/go-ap/storage-conformance-suite v0.0.0-20260402080021-eac1c19dffa3
 	github.com/google/go-cmp v0.7.0
 	github.com/openshift/osin v1.0.2-0.20220317075346-0f4d38c6e53f
 	golang.org/x/crypto v0.49.0

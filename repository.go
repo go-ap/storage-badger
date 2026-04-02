@@ -134,25 +134,12 @@ func (r *repo) Load(i vocab.IRI, checks ...filters.Check) (vocab.Item, error) {
 
 var errNotOpen = errors.Newf("badger db is not open")
 
+// Create
+// Deprecated
 func (r *repo) Create(col vocab.CollectionInterface) (vocab.CollectionInterface, error) {
-	if r.root == nil {
-		return nil, errNotOpen
-	}
-	if vocab.IsIRI(col) {
-		return col, errors.Errorf("invalid collection to save: %s", col)
-	}
-
-	it, err := save(r, col)
-	if err != nil {
-		return nil, err
-	}
-
-	var ok bool
-	col, ok = it.(vocab.CollectionInterface)
-	if !ok {
-		return col, errors.Errorf("invalid collection saved: %s", col)
-	}
-	return col, nil
+	it, err := r.Save(col)
+	col, _ = it.(vocab.CollectionInterface)
+	return col, err
 }
 
 func onCollection(r *repo, col vocab.Item, fn func(iris vocab.IRIs) (vocab.IRIs, error)) error {
