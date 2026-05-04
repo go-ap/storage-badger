@@ -92,7 +92,7 @@ func Test_repo_AddTo(t *testing.T) {
 			_ = r.Open()
 			defer r.Close()
 
-			if _, err = r.Create(orderedCollection(tt.args.col)); err != nil {
+			if _, err = r.Save(orderedCollection(tt.args.col)); err != nil {
 				t.Errorf("unable to create collection %s: %s", tt.args.it, err)
 			}
 			for _, it := range tt.args.it {
@@ -174,7 +174,7 @@ func Test_repo_Create(t *testing.T) {
 				logFn: emptyLogFn,
 				errFn: emptyLogFn,
 			}
-			got, err := r.Create(tt.col)
+			got, err := r.Save(tt.col)
 			if !cmp.Equal(err, tt.wantErr, cmpopts.EquateErrors(), cmpopts.EquateApproxTime(5*time.Second)) {
 				t.Fatalf("Create() error = %s", cmp.Diff(tt.wantErr, err, cmpopts.EquateErrors()))
 			}

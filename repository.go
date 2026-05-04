@@ -134,14 +134,6 @@ func (r *repo) Load(i vocab.IRI, checks ...filters.Check) (vocab.Item, error) {
 
 var errNotOpen = errors.Newf("badger db is not open")
 
-// Create
-// Deprecated
-func (r *repo) Create(col vocab.CollectionInterface) (vocab.CollectionInterface, error) {
-	it, err := r.Save(col)
-	col, _ = it.(vocab.CollectionInterface)
-	return col, err
-}
-
 func onCollection(r *repo, col vocab.Item, fn func(iris vocab.IRIs) (vocab.IRIs, error)) error {
 	if vocab.IsNil(col) {
 		return errors.Newf("Unable to find collection")
