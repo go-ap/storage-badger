@@ -159,8 +159,8 @@ func (r *repo) ListClients() ([]osin.Client, error) {
 	return clients, err
 }
 
-// UpdateClient updates the client (identified by its id) and replaces the values with the values of client.
-func (r *repo) UpdateClient(c osin.Client) error {
+// SaveClient saves the client (identified by its id) and replaces the values with the values of client.
+func (r *repo) SaveClient(c osin.Client) error {
 	if r == nil || r.root == nil {
 		return errNotOpen
 	}
@@ -183,14 +183,6 @@ func (r *repo) UpdateClient(c osin.Client) error {
 		return err
 	}
 	return tx.Flush()
-}
-
-// CreateClient stores the client in the database and returns an error, if something went wrong.
-func (r *repo) CreateClient(c osin.Client) error {
-	if r == nil || r.root == nil {
-		return errNotOpen
-	}
-	return r.UpdateClient(c)
 }
 
 // RemoveClient removes a client (identified by id) from the database. Returns an error if something went wrong.
