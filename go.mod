@@ -4,11 +4,11 @@ go 1.25.0
 
 require (
 	github.com/dgraph-io/badger/v4 v4.9.1
-	github.com/go-ap/activitypub v0.0.0-20260602080815-739274c2fcce
-	github.com/go-ap/cache v0.0.0-20260601105412-761bb369c090
-	github.com/go-ap/errors v0.0.0-20260208110149-e1b309365966
-	github.com/go-ap/filters v0.0.0-20260602081319-5ed1fa02cd11
-	github.com/go-ap/storage-conformance-suite v0.0.0-20260516093850-f84de69d19fe
+	github.com/go-ap/activitypub v0.0.0-20260607141243-4f8aa4005e65
+	github.com/go-ap/cache v0.0.0-20260607141501-80f9206d91a9
+	github.com/go-ap/errors v0.0.0-20260607141156-afed270859b6
+	github.com/go-ap/filters v0.0.0-20260607141701-131281f883a2
+	github.com/go-ap/storage-conformance-suite v0.0.0-20260607142507-0dc986eef59e
 	github.com/google/go-cmp v0.7.0
 	github.com/openshift/osin v1.0.2-0.20220317075346-0f4d38c6e53f
 	golang.org/x/crypto v0.52.0
@@ -18,7 +18,7 @@ require (
 	git.sr.ht/~mariusor/go-xsd-duration v0.0.0-20220703122237-02e73435a078 // indirect
 	github.com/RoaringBitmap/roaring v1.9.4 // indirect
 	github.com/aymanbagabas/go-osc52/v2 v2.0.1 // indirect
-	github.com/bits-and-blooms/bitset v1.24.4 // indirect
+	github.com/bits-and-blooms/bitset v1.24.5 // indirect
 	github.com/cespare/xxhash/v2 v2.3.0 // indirect
 	github.com/charmbracelet/colorprofile v0.4.3 // indirect
 	github.com/charmbracelet/lipgloss v1.1.0 // indirect
@@ -29,7 +29,7 @@ require (
 	github.com/clipperhouse/uax29/v2 v2.7.0 // indirect
 	github.com/dgraph-io/ristretto/v2 v2.4.0 // indirect
 	github.com/dustin/go-humanize v1.0.1 // indirect
-	github.com/go-ap/jsonld v0.0.0-20251216162253-e38fa664ea77 // indirect
+	github.com/go-ap/jsonld v0.0.0-20260607140920-737b40e0ca38 // indirect
 	github.com/go-logr/logr v1.4.3 // indirect
 	github.com/go-logr/stdr v1.2.2 // indirect
 	github.com/google/flatbuffers v25.12.19+incompatible // indirect
