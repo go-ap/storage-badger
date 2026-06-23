@@ -169,8 +169,8 @@ func onCollection(r *repo, col vocab.Item, fn func(iris vocab.IRIs) (vocab.IRIs,
 					return errors.Annotatef(err, "Unable to unmarshal collection %s", p)
 				}
 
-				return vocab.OnIRIs(colItems, func(col *vocab.IRIs) error {
-					iris = *col
+				return vocab.OnItemCollection(colItems, func(col *vocab.ItemCollection) error {
+					iris = col.IRIs()
 					return nil
 				})
 			})
