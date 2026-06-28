@@ -4,11 +4,11 @@ go 1.25.0
 
 require (
 	github.com/dgraph-io/badger/v4 v4.9.2
-	github.com/go-ap/activitypub v0.0.0-20260623165555-815f070c5691
-	github.com/go-ap/cache v0.0.0-20260623165715-8c6851972415
-	github.com/go-ap/errors v0.0.0-20260607141156-afed270859b6
-	github.com/go-ap/filters v0.0.0-20260623165758-2d9724598dc0
-	github.com/go-ap/storage-conformance-suite v0.0.0-20260623172337-883f549adb9e
+	github.com/go-ap/activitypub v0.0.0-20260701132640-13f25467c431
+	github.com/go-ap/cache v0.0.0-20260701130124-797fc104fa42
+	github.com/go-ap/errors v0.0.0-20260701132509-92e5e4fd6394
+	github.com/go-ap/filters v0.0.0-20260701132827-4ad866f2a41d
+	github.com/go-ap/storage-conformance-suite v0.0.0-20260701133105-6fdc36975811
 	github.com/google/go-cmp v0.7.0
 	github.com/openshift/osin v1.0.2-0.20220317075346-0f4d38c6e53f
 	golang.org/x/crypto v0.53.0
@@ -36,7 +36,7 @@ require (
 	github.com/google/uuid v1.6.0 // indirect
 	github.com/hashicorp/golang-lru v1.0.2 // indirect
 	github.com/jdkato/prose v1.2.1 // indirect
-	github.com/klauspost/compress v1.18.6 // indirect
+	github.com/klauspost/compress v1.19.0 // indirect
 	github.com/leporo/sqlf v1.4.0 // indirect
 	github.com/lucasb-eyer/go-colorful v1.4.0 // indirect
 	github.com/mattn/go-isatty v0.0.20 // indirect
