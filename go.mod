@@ -3,11 +3,11 @@ module github.com/go-ap/storage-badger
 go 1.25.0
 
 require (
-	github.com/dgraph-io/badger/v4 v4.9.4
-	github.com/go-ap/activitypub v0.0.0-20260720130625-e2c76676dde7
-	github.com/go-ap/cache v0.0.0-20260720130756-5966f822532a
+	github.com/dgraph-io/badger/v4 v4.9.5
+	github.com/go-ap/activitypub v0.0.0-20260726121542-1f5299646d89
+	github.com/go-ap/cache v0.0.0-20260726121806-b16fde52ceaa
 	github.com/go-ap/errors v0.0.0-20260701132509-92e5e4fd6394
-	github.com/go-ap/filters v0.0.0-20260720130825-55f4e622346f
+	github.com/go-ap/filters v0.0.0-20260726122206-0a4b91e3b913
 	github.com/go-ap/storage-conformance-suite v0.0.0-20260720133242-626f09d14d19
 	github.com/google/go-cmp v0.7.0
 	github.com/openshift/osin v1.0.2-0.20220317075346-0f4d38c6e53f
@@ -30,7 +30,7 @@ require (
 	github.com/dgraph-io/ristretto/v2 v2.4.2 // indirect
 	github.com/dustin/go-humanize v1.0.1 // indirect
 	github.com/go-ap/jsonld v0.0.0-20260607140920-737b40e0ca38 // indirect
-	github.com/go-logr/logr v1.4.3 // indirect
+	github.com/go-logr/logr v1.4.4 // indirect
 	github.com/go-logr/stdr v1.2.2 // indirect
 	github.com/google/flatbuffers v25.12.19+incompatible // indirect
 	github.com/google/uuid v1.6.0 // indirect
