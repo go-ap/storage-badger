@@ -335,7 +335,7 @@ func delete(r *repo, it vocab.Item) error {
 
 // createCollections
 func createCollections(tx *badger.Txn, it vocab.Item) error {
-	if vocab.IsNil(it) || !it.IsObject() {
+	if vocab.IsNil(it) || !vocab.IsObject(it) {
 		return nil
 	}
 	if typ := it.GetType(); typ != nil && vocab.ActorTypes.Match(typ) {
@@ -471,7 +471,7 @@ func (r *repo) loadFromItem(tx *badger.Txn, into *vocab.ItemCollection, iri voca
 			return errors.NewNotFound(err, "not found")
 		}
 		switch {
-		case it.IsCollection():
+		case vocab.IsCollection(it):
 			return vocab.OnOrderedCollection(it, func(ci *vocab.OrderedCollection) error {
 				c, err := r.loadCollectionItems(tx, ci.ID, f...)
 				if err != nil {
@@ -484,7 +484,7 @@ func (r *repo) loadFromItem(tx *badger.Txn, into *vocab.ItemCollection, iri voca
 				_ = into.Append(it)
 				return nil
 			})
-		case !it.IsObject() && it.IsLink():
+		case vocab.IsIRI(it):
 			c, err := r.loadItemsByIRIs(tx, nil, it.GetLink())
 			if err != nil {
 				return err
