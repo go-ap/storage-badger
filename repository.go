@@ -472,46 +472,55 @@ func (r *repo) loadFromItem(tx *badger.Txn, into *vocab.ItemCollection, iri voca
 		}
 		switch {
 		case vocab.IsCollection(it):
-			return vocab.OnOrderedCollection(it, func(ci *vocab.OrderedCollection) error {
+			err = vocab.OnOrderedCollection(it, func(ci *vocab.OrderedCollection) error {
 				c, err := r.loadCollectionItems(tx, ci.ID, f...)
 				if err != nil {
 					return err
 				}
 				ci.ID = iri
 				if len(c) > 0 {
+					for _, it := range c {
+						loadFilteredPropsForItem(r, it, tx, f...)
+					}
 					ci.OrderedItems = c
 				}
 				_ = into.Append(it)
 				return nil
 			})
+			if err != nil {
+				return err
+			}
 		case vocab.IsIRI(it):
 			c, err := r.loadItemsByIRIs(tx, nil, it.GetLink())
 			if err != nil {
 				return err
 			}
 			for _, it := range c {
+				loadFilteredPropsForItem(r, it, tx, f...)
 				_ = into.Append(it)
 			}
 		}
 		if !vocab.IsNil(it) {
-			typ := it.GetType()
-			if vocab.ActorTypes.Match(typ) {
-				_ = vocab.OnActor(it, loadFilteredPropsForActor(r, tx, f...))
-			}
-			if vocab.ObjectTypes.Match(typ) {
-				_ = vocab.OnObject(it, loadFilteredPropsForObject(r, tx, f...))
-			}
-			if vocab.IntransitiveActivityTypes.Match(typ) {
-				_ = vocab.OnIntransitiveActivity(it, loadFilteredPropsForIntransitiveActivity(r, tx, f...))
-			}
-			if vocab.ActivityTypes.Match(typ) {
-				_ = vocab.OnActivity(it, loadFilteredPropsForActivity(r, tx, f...))
-			}
-			if !into.Contains(it.GetLink()) {
-				*into = append(*into, it)
-			}
+			loadFilteredPropsForItem(r, it, tx, f...)
+			into.Append(it)
 		}
 		return nil
+	}
+}
+
+func loadFilteredPropsForItem(r *repo, it vocab.Item, tx *badger.Txn, f ...filters.Check) {
+	typ := it.GetType()
+	if vocab.ActorTypes.Match(typ) {
+		_ = vocab.OnActor(it, loadFilteredPropsForActor(r, tx, f...))
+	}
+	if vocab.ObjectTypes.Match(typ) {
+		_ = vocab.OnObject(it, loadFilteredPropsForObject(r, tx, f...))
+	}
+	if vocab.IntransitiveActivityTypes.Match(typ) {
+		_ = vocab.OnIntransitiveActivity(it, loadFilteredPropsForIntransitiveActivity(r, tx, f...))
+	}
+	if vocab.ActivityTypes.Match(typ) {
+		_ = vocab.OnActivity(it, loadFilteredPropsForActivity(r, tx, f...))
 	}
 }
 
