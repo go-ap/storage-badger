@@ -530,7 +530,7 @@ func loadFilteredPropsForActor(r *repo, tx *badger.Txn, f ...filters.Check) func
 	}
 }
 
-func loadFilteredPropsForObject(r *repo, tx *badger.Txn, _ ...filters.Check) func(o *vocab.Object) error {
+func loadFilteredPropsForObject(r *repo, tx *badger.Txn, fil ...filters.Check) func(o *vocab.Object) error {
 	return func(o *vocab.Object) error {
 		if len(o.Tag) == 0 {
 			return nil
@@ -540,9 +540,14 @@ func loadFilteredPropsForObject(r *repo, tx *badger.Txn, _ ...filters.Check) fun
 				if vocab.IsNil(t) || !vocab.IsIRI(t) {
 					return nil
 				}
-				if ob, err := r.loadOneFromPath(tx, t.GetLink()); err == nil {
-					(*col)[i] = ob
+				ob, err := r.loadOneFromPath(tx, t.GetLink())
+				if err != nil {
+					continue
 				}
+				if ob = filters.TagChecks(fil...).Run(ob); ob == nil {
+					continue
+				}
+				(*col)[i] = ob
 			}
 			return nil
 		})
@@ -550,29 +555,37 @@ func loadFilteredPropsForObject(r *repo, tx *badger.Txn, _ ...filters.Check) fun
 }
 
 func loadFilteredPropsForActivity(r *repo, tx *badger.Txn, f ...filters.Check) func(a *vocab.Activity) error {
+	objectChecks := filters.ObjectChecks(f...)
+	intransitiveChecks := filters.IntransitiveActivityChecks(f...)
 	return func(a *vocab.Activity) error {
-		if len(filters.ObjectChecks(f...)) > 0 {
-			if ob, err := r.loadOneFromPath(tx, a.Object.GetLink()); err == nil {
-				a.Object = ob
+		var err error
+		if !vocab.IsNil(a.Object) {
+			if a.ID.Equals(a.Object.GetLink(), false) {
+				return errors.BadGatewayf("invalid activity with id %s, referencing itself as an object: %s", a.ID, a.Object.GetLink())
+			}
+			if a.Object, err = r.loadOneFromPath(tx, a.Object.GetLink(), objectChecks...); err != nil {
+				return err
 			}
 		}
-		return vocab.OnIntransitiveActivity(a, loadFilteredPropsForIntransitiveActivity(r, tx, f...))
+		return vocab.OnIntransitiveActivity(a, loadFilteredPropsForIntransitiveActivity(r, tx, intransitiveChecks...))
 	}
 }
 
-func loadFilteredPropsForIntransitiveActivity(r *repo, tx *badger.Txn, f ...filters.Check) func(a *vocab.IntransitiveActivity) error {
+func loadFilteredPropsForIntransitiveActivity(r *repo, tx *badger.Txn, fil ...filters.Check) func(a *vocab.IntransitiveActivity) error {
+	targetChecks := filters.TargetChecks(fil...)
+	actorChecks := filters.ActorChecks(fil...)
 	return func(a *vocab.IntransitiveActivity) error {
-		if len(filters.ActorChecks(f...)) > 0 {
-			if act, err := r.loadOneFromPath(tx, a.Actor.GetLink()); err == nil {
+		if len(actorChecks) > 0 {
+			if act, err := r.loadOneFromPath(tx, a.Actor.GetLink(), actorChecks...); err == nil {
 				a.Actor = act
 			}
 		}
-		if len(filters.TargetChecks(f...)) > 0 {
-			if t, err := r.loadOneFromPath(tx, a.Target.GetLink()); err == nil {
+		if len(targetChecks) > 0 {
+			if t, err := r.loadOneFromPath(tx, a.Target.GetLink(), targetChecks...); err == nil {
 				a.Target = t
 			}
 		}
-		return nil
+		return vocab.OnObject(a, loadFilteredPropsForObject(r, tx))
 	}
 }
 
