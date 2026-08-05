@@ -100,14 +100,8 @@ func (r *repo) close() error {
 }
 
 func firstOrItem(it vocab.Item) vocab.Item {
-	if vocab.IsNil(it) {
-		return it
-	}
-	if vocab.IsItemCollection(it) {
-		_ = vocab.OnItemCollection(it, func(col *vocab.ItemCollection) error {
-			it = col.First()
-			return nil
-		})
+	if col, ok := it.(vocab.ItemCollection); ok && len(col) == 1 {
+		return col[0]
 	}
 	return it
 }
@@ -129,6 +123,7 @@ func (r *repo) Load(i vocab.IRI, checks ...filters.Check) (vocab.Item, error) {
 	if err != nil {
 		return nil, err
 	}
+
 	return filters.Checks(checks).Run(firstOrItem(ret)), nil
 }
 
@@ -633,12 +628,12 @@ func (r *repo) loadFromPath(tx *badger.Txn, iri vocab.IRI, checks ...filters.Che
 func (r *repo) loadOneFromPath(tx *badger.Txn, f vocab.IRI, filters ...filters.Check) (vocab.Item, error) {
 	col, err := r.loadFromPath(tx, f, filters...)
 	if err != nil {
+		if errors.IsNotFound(err) {
+			return f, nil
+		}
 		return nil, err
 	}
-	if len(col) == 0 {
-		return nil, errors.NotFoundf("nothing found")
-	}
-	return col.First(), nil
+	return firstOrItem(col), nil
 }
 
 func getObjectKey(p []byte) []byte {
