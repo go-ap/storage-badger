@@ -3,12 +3,12 @@ module github.com/go-ap/storage-badger
 go 1.25.0
 
 require (
-	github.com/dgraph-io/badger/v4 v4.9.5
+	github.com/dgraph-io/badger/v4 v4.9.6
 	github.com/go-ap/activitypub v0.0.0-20260803135430-cb9978486dff
 	github.com/go-ap/cache v0.0.0-20260803141141-2249e83e921d
 	github.com/go-ap/errors v0.0.0-20260701132509-92e5e4fd6394
 	github.com/go-ap/filters v0.0.0-20260803180515-dca600d1a418
-	github.com/go-ap/storage-conformance-suite v0.0.0-20260803143156-1d6f11dd8e84
+	github.com/go-ap/storage-conformance-suite v0.0.0-20260809080530-b3fe960f424f
 	github.com/google/go-cmp v0.7.0
 	github.com/openshift/osin v1.0.2-0.20220317075346-0f4d38c6e53f
 	golang.org/x/crypto v0.54.0
@@ -36,7 +36,7 @@ require (
 	github.com/google/uuid v1.6.0 // indirect
 	github.com/hashicorp/golang-lru v1.0.2 // indirect
 	github.com/jdkato/prose v1.2.1 // indirect
-	github.com/klauspost/compress v1.19.1 // indirect
+	github.com/klauspost/compress v1.19.2 // indirect
 	github.com/leporo/sqlf v1.4.0 // indirect
 	github.com/lucasb-eyer/go-colorful v1.4.1 // indirect
 	github.com/mattn/go-isatty v0.0.24 // indirect
