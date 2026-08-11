@@ -4,11 +4,11 @@ go 1.25.0
 
 require (
 	github.com/dgraph-io/badger/v4 v4.9.6
-	github.com/go-ap/activitypub v0.0.0-20260803135430-cb9978486dff
-	github.com/go-ap/cache v0.0.0-20260803141141-2249e83e921d
+	github.com/go-ap/activitypub v0.0.0-20260811143456-e874d5d2264f
+	github.com/go-ap/cache v0.0.0-20260811143546-9a4c231043c6
 	github.com/go-ap/errors v0.0.0-20260701132509-92e5e4fd6394
-	github.com/go-ap/filters v0.0.0-20260803180515-dca600d1a418
-	github.com/go-ap/storage-conformance-suite v0.0.0-20260809080530-b3fe960f424f
+	github.com/go-ap/filters v0.0.0-20260811143713-b24d703996ba
+	github.com/go-ap/storage-conformance-suite v0.0.0-20260811144223-2bd56782e86a
 	github.com/google/go-cmp v0.7.0
 	github.com/openshift/osin v1.0.2-0.20220317075346-0f4d38c6e53f
 	golang.org/x/crypto v0.54.0
@@ -60,7 +60,7 @@ require (
 	golang.org/x/term v0.45.0 // indirect
 	golang.org/x/text v0.40.0 // indirect
 	golang.org/x/tools v0.48.0 // indirect
-	google.golang.org/protobuf v1.36.11 // indirect
+	google.golang.org/protobuf v1.36.12 // indirect
 	gopkg.in/neurosnap/sentences.v1 v1.0.7 // indirect
 	quamina.net/go/quamina/v2 v2.0.2 // indirect
 )
