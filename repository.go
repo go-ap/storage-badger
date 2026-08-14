@@ -24,7 +24,7 @@ type repo struct {
 var encodeItemFn = vocab.MarshalJSON
 var decodeItemFn = vocab.UnmarshalJSON
 
-type loggerFn func(string, ...interface{})
+type loggerFn func(string, ...any)
 
 // Config
 type Config struct {
@@ -34,7 +34,7 @@ type Config struct {
 	ErrFn       loggerFn
 }
 
-var emptyLogFn = func(string, ...interface{}) {}
+var emptyLogFn = func(string, ...any) {}
 
 type Filterable = vocab.LinkOrIRI
 
