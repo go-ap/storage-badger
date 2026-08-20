@@ -67,6 +67,8 @@ func badgerOpenConfig(path string, logFn, errFn loggerFn) badger.Options {
 		c.InMemory = true
 	}
 	c.MetricsEnabled = false
+	c.BypassLockGuard = true
+	c.SyncWrites = true
 	return c
 }
 
@@ -78,9 +80,9 @@ func (r *repo) Open() error {
 	var err error
 	r.root, err = badger.Open(badgerOpenConfig(r.path, r.logFn, r.errFn))
 	if err != nil {
-		err = errors.Annotatef(err, "unable to open storage")
+		return errors.Annotatef(err, "unable to open storage")
 	}
-	return err
+	return nil
 }
 
 // Close closes the badger database if possible.
