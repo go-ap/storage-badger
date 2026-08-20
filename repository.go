@@ -142,7 +142,7 @@ func onCollection(r *repo, col vocab.Item, fn func(iris vocab.IRIs) (vocab.IRIs,
 		var c *vocab.OrderedCollection
 		i, err := tx.Get(colKey)
 		if err != nil {
-			return errors.Annotatef(err, "Unable load collection %s", p)
+			return errors.NewNotFound(err, "Unable load collection %s", p)
 		}
 		err = i.Value(func(raw []byte) error {
 			it, err := decodeItemFn(raw)
