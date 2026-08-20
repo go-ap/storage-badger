@@ -126,7 +126,11 @@ func (r *repo) Load(i vocab.IRI, checks ...filters.Check) (vocab.Item, error) {
 		return nil, err
 	}
 
-	return filters.Checks(checks).Run(firstOrItem(ret)), nil
+	ret = filters.Checks(checks).Run(firstOrItem(ret))
+	if ret == nil {
+		return nil, errors.NotFoundf("not found")
+	}
+	return ret, nil
 }
 
 var errNotOpen = errors.Newf("badger db is not open")
@@ -322,6 +326,9 @@ func delete(r *repo, it vocab.Item) error {
 		old = ob
 		return nil
 	})
+	if err != nil {
+		return err
+	}
 
 	tx := r.root.NewWriteBatch()
 	if err = deleteFromTx(tx, old); err != nil {
