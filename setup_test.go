@@ -397,14 +397,14 @@ func filter(items vocab.ItemCollection, fil ...filters.Check) vocab.ItemCollecti
 
 func wantsRootOutboxPage(maxItems int, ff ...filters.Check) vocab.Item {
 	return &vocab.OrderedCollectionPage{
-		ID:           rootOutboxIRI,
+		ID:           filters.IRIf(rootOutboxIRI, ff...),
 		Type:         vocab.OrderedCollectionPageType,
 		AttributedTo: rootIRI,
 		Published:    publishedTime,
 		CC:           vocab.ItemCollection{vocab.IRI("https://www.w3.org/ns/activitystreams#Public")},
 		PartOf:       rootOutboxIRI,
-		First:        vocab.IRI(string(rootOutboxIRI) + "?" + filters.ToValues(filters.WithMaxCount(maxItems)).Encode()),
-		Next:         vocab.IRI(string(rootOutboxIRI) + "?" + filters.ToValues(filters.After(filters.SameID(rootIRI.AddPath("create/2"))), filters.WithMaxCount(maxItems)).Encode()),
+		First:        filters.IRIf(rootOutboxIRI, append(ff, filters.WithMaxCount(maxItems))...),
+		Next:         filters.IRIf(rootOutboxIRI, append(ff, filters.After(filters.SameID(rootIRI.AddPath("create/2"))), filters.WithMaxCount(maxItems))...),
 		OrderedItems: filter(*allActivities.Load(), ff...),
 		TotalItems:   allActivities.Load().Count(),
 	}
@@ -412,7 +412,7 @@ func wantsRootOutboxPage(maxItems int, ff ...filters.Check) vocab.Item {
 
 func wantsRootOutbox(ff ...filters.Check) vocab.Item {
 	col := &vocab.OrderedCollection{
-		ID:           rootOutboxIRI,
+		ID:           filters.IRIf(rootOutboxIRI, ff...),
 		Type:         vocab.OrderedCollectionType,
 		AttributedTo: rootIRI,
 		Published:    publishedTime,
@@ -421,7 +421,7 @@ func wantsRootOutbox(ff ...filters.Check) vocab.Item {
 		TotalItems:   allActivities.Load().Count(),
 	}
 	if len(ff) > 0 {
-		col.First = vocab.IRI(string(rootOutboxIRI) + "?" + filters.ToValues(filters.WithMaxCount(filters.MaxItems)).Encode())
+		col.First = filters.IRIf(rootOutboxIRI, append(ff, filters.WithMaxCount(filters.MaxItems))...)
 	}
 
 	return col

@@ -4,11 +4,11 @@ go 1.25.0
 
 require (
 	github.com/dgraph-io/badger/v4 v4.9.6
-	github.com/go-ap/activitypub v0.0.0-20260824082814-78f0de545fcf
-	github.com/go-ap/cache v0.0.0-20260824082836-3917e1d34ebf
+	github.com/go-ap/activitypub v0.0.0-20260828142325-6c1da3fca413
+	github.com/go-ap/cache v0.0.0-20260828143636-d5c30a299ed2
 	github.com/go-ap/errors v0.0.0-20260701132509-92e5e4fd6394
-	github.com/go-ap/filters v0.0.0-20260824082944-efaa36126211
-	github.com/go-ap/storage-conformance-suite v0.0.0-20260824083351-1b8cb6447fbf
+	github.com/go-ap/filters v0.0.0-20260829143922-adca6eec8763
+	github.com/go-ap/storage-conformance-suite v0.0.0-20260831090222-2c28ad1825e4
 	github.com/google/go-cmp v0.7.0
 	github.com/openshift/osin v1.0.2-0.20220317075346-0f4d38c6e53f
 	golang.org/x/crypto v0.55.0
@@ -52,9 +52,9 @@ require (
 	github.com/valyala/fastjson v1.6.10 // indirect
 	github.com/xo/terminfo v0.0.0-20220910002029-abceb7e1c41e // indirect
 	go.opentelemetry.io/auto/sdk v1.2.1 // indirect
-	go.opentelemetry.io/otel v1.45.0 // indirect
-	go.opentelemetry.io/otel/metric v1.45.0 // indirect
-	go.opentelemetry.io/otel/trace v1.45.0 // indirect
+	go.opentelemetry.io/otel v1.46.0 // indirect
+	go.opentelemetry.io/otel/metric v1.46.0 // indirect
+	go.opentelemetry.io/otel/trace v1.46.0 // indirect
 	golang.org/x/mod v0.38.0 // indirect
 	golang.org/x/sys v0.47.0 // indirect
 	golang.org/x/term v0.45.0 // indirect
