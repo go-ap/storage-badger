@@ -18,7 +18,6 @@ import (
 	"github.com/go-ap/errors"
 	"github.com/go-ap/filters"
 	conformance "github.com/go-ap/storage-conformance-suite"
-	"github.com/google/go-cmp/cmp"
 	"github.com/openshift/osin"
 	"golang.org/x/crypto/bcrypt"
 )
@@ -38,35 +37,10 @@ func compareErrors(x, y interface{}) bool {
 	return xe.Error() == ye.Error()
 }
 
-var EquateWeakErrors = cmp.FilterValues(areErrors, cmp.Comparer(compareErrors))
-
-func areItemCollections(a, b any) bool {
-	_, ok1 := a.(vocab.ItemCollection)
-	_, ok3 := a.(*vocab.ItemCollection)
-	_, ok2 := b.(vocab.ItemCollection)
-	_, ok4 := b.(*vocab.ItemCollection)
-	return (ok1 || ok3) && (ok2 || ok4)
-}
-
-func compareItemCollections(x, y interface{}) bool {
-	var i1 vocab.Item
-	var i2 vocab.Item
-	if ic1, ok := x.(vocab.ItemCollection); ok {
-		i1 = ic1
-	}
-	if ic1, ok := x.(*vocab.ItemCollection); ok {
-		i1 = *ic1
-	}
-	if ic2, ok := y.(vocab.ItemCollection); ok {
-		i2 = ic2
-	}
-	if ic2, ok := y.(*vocab.ItemCollection); ok {
-		i2 = *ic2
-	}
-	return vocab.ItemsEqual(i1, i2)
-}
-
-var EquateItemCollections = cmp.FilterValues(areItemCollections, cmp.Comparer(compareItemCollections))
+var (
+	EquateItemCollections = conformance.EquateItemCollections
+	EquateWeakErrors      = conformance.EquateErrors
+)
 
 type fields struct {
 	path string
@@ -307,6 +281,15 @@ func createActivity(ob vocab.Item, attrTo vocab.Item) *vocab.Activity {
 	return act
 }
 
+func randomTags(parent vocab.Item) vocab.ItemCollection {
+	cnt := mrand.Intn(3)
+	tags := make(vocab.ItemCollection, 0, cnt)
+	for _ = range cnt {
+		_ = tags.Append(conformance.RandomTag(parent))
+	}
+	return tags
+}
+
 func withGeneratedMocks(t *testing.T, r *repo) *repo {
 	idSetter := setId(rootIRI)
 	r = withGeneratedRoot(root)(t, r)
@@ -331,7 +314,7 @@ func withGeneratedMocks(t *testing.T, r *repo) *repo {
 		ob := conformance.RandomObject(parent)
 		_ = vocab.OnObject(ob, func(object *vocab.Object) error {
 			object.Published = publishedTime
-			object.Tag = vocab.ItemCollection{conformance.RandomTag(parent)}
+			object.Tag = randomTags(parent).Normalize()
 			return idSetter(object)
 		})
 		_ = objects.Append(ob)

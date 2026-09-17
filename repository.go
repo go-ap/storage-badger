@@ -536,25 +536,34 @@ func loadFilteredPropsForActor(r *repo, tx *badger.Txn, f ...filters.Check) func
 
 func loadFilteredPropsForObject(r *repo, tx *badger.Txn, fil ...filters.Check) func(o *vocab.Object) error {
 	return func(o *vocab.Object) error {
-		if len(o.Tag) == 0 {
+		if vocab.IsNil(o.Tag) {
 			return nil
 		}
-		return vocab.OnItemCollection(o.Tag, func(col *vocab.ItemCollection) error {
-			for i, t := range *col {
-				if vocab.IsNil(t) || !vocab.IsIRI(t) {
+		tags := make(vocab.ItemCollection, 0)
+		err := vocab.OnItem(o.Tag, func(it vocab.Item) error {
+			if vocab.IsNil(it) {
+				return nil
+			}
+			var tag vocab.Item
+			if !vocab.IsIRI(it) {
+				tag = it
+			} else {
+				ob, err := r.loadOneFromPath(tx, it.GetLink())
+				if err != nil {
 					return nil
 				}
-				ob, err := r.loadOneFromPath(tx, t.GetLink())
-				if err != nil {
-					continue
-				}
 				if ob = filters.TagChecks(fil...).Run(ob); ob == nil {
-					continue
+					return nil
 				}
-				(*col)[i] = ob
+				tag = it
 			}
+			_ = tags.Append(tag)
 			return nil
 		})
+		if err == nil && len(tags) > 0 {
+			o.Tag = tags.Normalize()
+		}
+		return err
 	}
 }
 
