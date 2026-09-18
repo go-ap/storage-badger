@@ -4,11 +4,11 @@ go 1.26.0
 
 require (
 	github.com/dgraph-io/badger/v4 v4.9.6
-	github.com/go-ap/activitypub v0.0.0-20260916121612-da08652e08dc
-	github.com/go-ap/cache v0.0.0-20260916121817-c59ee0716a68
+	github.com/go-ap/activitypub v0.0.0-20260918105548-e6a56570f510
+	github.com/go-ap/cache v0.0.0-20260918105903-503aa5cfb16c
 	github.com/go-ap/errors v0.0.0-20260701132509-92e5e4fd6394
-	github.com/go-ap/filters v0.0.0-20260916121847-9aca56ef40a8
-	github.com/go-ap/storage-conformance-suite v0.0.0-20260917082442-8096ea14500f
+	github.com/go-ap/filters v0.0.0-20260918110443-64f45f55c1fa
+	github.com/go-ap/storage-conformance-suite v0.0.0-20260918110939-89c051340651
 	github.com/google/go-cmp v0.7.0
 	github.com/openshift/osin v1.0.2-0.20220317075346-0f4d38c6e53f
 	golang.org/x/crypto v0.57.0
@@ -28,7 +28,7 @@ require (
 	github.com/clipperhouse/displaywidth v0.11.0 // indirect
 	github.com/clipperhouse/uax29/v2 v2.7.0 // indirect
 	github.com/dgraph-io/ristretto/v2 v2.4.2 // indirect
-	github.com/dustin/go-humanize v1.0.1 // indirect
+	github.com/dustin/go-humanize v1.1.0 // indirect
 	github.com/go-ap/jsonld v0.0.0-20260607140920-737b40e0ca38 // indirect
 	github.com/go-logr/logr v1.4.4 // indirect
 	github.com/go-logr/stdr v1.2.2 // indirect
