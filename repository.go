@@ -267,7 +267,7 @@ func (r *repo) AddTo(colIRI vocab.IRI, items ...vocab.Item) error {
 	var col vocab.Item
 	toWrite := make(vocab.ItemCollection, 0)
 	err := r.root.View(func(tx *badger.Txn) error {
-		maybeCol, err := r.loadOneFromPath(tx, colIRI)
+		maybeCol, err := r.loadItemFromPath(tx, colIRI)
 		if err != nil && !isHiddenCollectionIRI(colIRI) {
 			return err
 		}
@@ -319,7 +319,7 @@ const itemsKey = "__items"
 func delete(r *repo, it vocab.Item) error {
 	var old vocab.Item
 	err := r.root.View(func(tx *badger.Txn) error {
-		ob, err := r.loadOneFromPath(tx, it.GetLink())
+		ob, err := r.loadItemFromPath(tx, it.GetLink())
 		if err != nil {
 			return err
 		}
@@ -468,7 +468,7 @@ func deleteFromTx(tx *badger.WriteBatch, it vocab.Item) error {
 	return nil
 }
 
-func (r *repo) loadFromItem(tx *badger.Txn, into *vocab.ItemCollection, iri vocab.IRI, f ...filters.Check) func(val []byte) error {
+func (r *repo) loadFromItem(tx *badger.Txn, into *vocab.ItemCollection, iri vocab.IRI, checks ...filters.Check) func(val []byte) error {
 	return func(val []byte) error {
 		it, err := loadItem(val)
 		if err != nil || vocab.IsNil(it) {
@@ -477,14 +477,14 @@ func (r *repo) loadFromItem(tx *badger.Txn, into *vocab.ItemCollection, iri voca
 		switch {
 		case vocab.IsCollection(it):
 			err = vocab.OnOrderedCollection(it, func(ci *vocab.OrderedCollection) error {
-				c, err := r.loadCollectionItems(tx, ci.ID, f...)
+				c, err := r.loadCollectionItems(tx, ci.ID, checks...)
 				if err != nil {
 					return err
 				}
 				ci.ID = iri
 				if len(c) > 0 {
 					for _, it := range c {
-						loadFilteredPropsForItem(r, it, tx, f...)
+						loadFilteredPropsForItem(r, it, tx, checks...)
 					}
 					ci.OrderedItems = c
 				}
@@ -500,101 +500,83 @@ func (r *repo) loadFromItem(tx *badger.Txn, into *vocab.ItemCollection, iri voca
 				return err
 			}
 			for _, it := range c {
-				loadFilteredPropsForItem(r, it, tx, f...)
+				loadFilteredPropsForItem(r, it, tx, checks...)
 				_ = into.Append(it)
 			}
 		}
 		if !vocab.IsNil(it) {
-			loadFilteredPropsForItem(r, it, tx, f...)
+			loadFilteredPropsForItem(r, it, tx, checks...)
 			into.Append(it)
 		}
 		return nil
 	}
 }
 
-func loadFilteredPropsForItem(r *repo, it vocab.Item, tx *badger.Txn, f ...filters.Check) {
+func loadFilteredPropsForItem(r *repo, it vocab.Item, tx *badger.Txn, checks ...filters.Check) {
 	typ := it.GetType()
 	if vocab.ActorTypes.Match(typ) {
-		_ = vocab.OnActor(it, loadFilteredPropsForActor(r, tx, f...))
+		_ = vocab.OnActor(it, loadFilteredPropsForActor(r, tx, checks...))
 	}
 	if vocab.ObjectTypes.Match(typ) {
-		_ = vocab.OnObject(it, loadFilteredPropsForObject(r, tx, f...))
+		_ = vocab.OnObject(it, loadFilteredPropsForObject(r, tx, checks...))
 	}
 	if vocab.IntransitiveActivityTypes.Match(typ) {
-		_ = vocab.OnIntransitiveActivity(it, loadFilteredPropsForIntransitiveActivity(r, tx, f...))
+		_ = vocab.OnIntransitiveActivity(it, loadFilteredPropsForIntransitiveActivity(r, tx, checks...))
 	}
 	if vocab.ActivityTypes.Match(typ) {
-		_ = vocab.OnActivity(it, loadFilteredPropsForActivity(r, tx, f...))
+		_ = vocab.OnActivity(it, loadFilteredPropsForActivity(r, tx, checks...))
 	}
 }
 
-func loadFilteredPropsForActor(r *repo, tx *badger.Txn, f ...filters.Check) func(a *vocab.Actor) error {
+func loadFilteredPropsForActor(r *repo, tx *badger.Txn, checks ...filters.Check) vocab.WithActorFn {
 	return func(a *vocab.Actor) error {
-		return vocab.OnObject(a, loadFilteredPropsForObject(r, tx, f...))
+		return vocab.OnObject(a, loadFilteredPropsForObject(r, tx, checks...))
 	}
 }
 
-func loadFilteredPropsForObject(r *repo, tx *badger.Txn, fil ...filters.Check) func(o *vocab.Object) error {
+func loadFilteredPropsForObject(r *repo, tx *badger.Txn, checks ...filters.Check) vocab.WithObjectFn {
+	tagChecks := filters.TagChecks(checks...)
+	if len(tagChecks) == 0 {
+		tagChecks = filters.Checks{filters.NoType}
+	}
 	return func(o *vocab.Object) error {
-		if vocab.IsNil(o.Tag) {
-			return nil
-		}
-		tags := make(vocab.ItemCollection, 0)
-		err := vocab.OnItem(o.Tag, func(it vocab.Item) error {
-			if vocab.IsNil(it) {
-				return nil
-			}
-			var tag vocab.Item
-			if !vocab.IsIRI(it) {
-				tag = it
-			} else {
-				ob, err := r.loadOneFromPath(tx, it.GetLink())
-				if err != nil {
-					return nil
-				}
-				if ob = filters.TagChecks(fil...).Run(ob); ob == nil {
-					return nil
-				}
-				tag = it
-			}
-			_ = tags.Append(tag)
-			return nil
-		})
-		if err == nil && len(tags) > 0 {
-			o.Tag = tags.Normalize()
+		var err error
+		if !vocab.IsNil(o.Tag) && len(tagChecks) > 0 {
+			o.Tag, err = r.loadItemFromPath(tx, o.Tag, tagChecks...)
 		}
 		return err
 	}
 }
 
-func loadFilteredPropsForActivity(r *repo, tx *badger.Txn, f ...filters.Check) func(a *vocab.Activity) error {
-	objectChecks := filters.ObjectChecks(f...)
-	intransitiveChecks := filters.IntransitiveActivityChecks(f...)
+var activityTypesThatShouldLoadObjects = vocab.ActivityVocabularyTypes{vocab.UpdateType, vocab.CreateType}
+
+func loadFilteredPropsForActivity(r *repo, tx *badger.Txn, checks ...filters.Check) vocab.WithActivityFn {
+	objectChecks := filters.ObjectChecks(checks...)
 	return func(a *vocab.Activity) error {
+		if len(objectChecks) == 0 && activityTypesThatShouldLoadObjects.Match(a.Type) {
+			objectChecks = filters.Checks{filters.NotNilID}
+		}
 		var err error
-		if !vocab.IsNil(a.Object) {
-			if a.ID.Equals(a.Object.GetLink(), false) {
-				return errors.BadGatewayf("invalid activity with id %s, referencing itself as an object: %s", a.ID, a.Object.GetLink())
-			}
-			if a.Object, err = r.loadOneFromPath(tx, a.Object.GetLink(), objectChecks...); err != nil {
+		if !vocab.IsNil(a.Object) && !a.ID.Equal(a.Object.GetID()) && len(objectChecks) > 0 {
+			if a.Object, err = r.loadItemFromPath(tx, a.Object, objectChecks...); err != nil {
 				return err
 			}
 		}
-		return vocab.OnIntransitiveActivity(a, loadFilteredPropsForIntransitiveActivity(r, tx, intransitiveChecks...))
+		return vocab.OnIntransitiveActivity(a, loadFilteredPropsForIntransitiveActivity(r, tx, checks...))
 	}
 }
 
-func loadFilteredPropsForIntransitiveActivity(r *repo, tx *badger.Txn, fil ...filters.Check) func(a *vocab.IntransitiveActivity) error {
-	targetChecks := filters.TargetChecks(fil...)
-	actorChecks := filters.ActorChecks(fil...)
+func loadFilteredPropsForIntransitiveActivity(r *repo, tx *badger.Txn, checks ...filters.Check) vocab.WithIntransitiveActivityFn {
+	targetChecks := filters.TargetChecks(checks...)
+	actorChecks := filters.ActorChecks(checks...)
 	return func(a *vocab.IntransitiveActivity) error {
-		if len(actorChecks) > 0 {
-			if act, err := r.loadOneFromPath(tx, a.Actor.GetLink(), actorChecks...); err == nil {
+		if len(actorChecks) > 0 && !vocab.IsNil(a.Actor) && !a.ID.Equal(a.Actor.GetID()) {
+			if act, err := r.loadItemFromPath(tx, a.Actor, actorChecks...); err == nil {
 				a.Actor = act
 			}
 		}
-		if len(targetChecks) > 0 {
-			if t, err := r.loadOneFromPath(tx, a.Target.GetLink(), targetChecks...); err == nil {
+		if len(targetChecks) > 0 && !vocab.IsNil(a.Target) && !a.ID.Equal(a.Target.GetID()) {
+			if t, err := r.loadItemFromPath(tx, a.Target, targetChecks...); err == nil {
 				a.Target = t
 			}
 		}
@@ -643,15 +625,22 @@ func (r *repo) loadFromPath(tx *badger.Txn, iri vocab.IRI, checks ...filters.Che
 	return col, nil
 }
 
-func (r *repo) loadOneFromPath(tx *badger.Txn, f vocab.IRI, filters ...filters.Check) (vocab.Item, error) {
-	col, err := r.loadFromPath(tx, f, filters...)
-	if err != nil {
-		if errors.IsNotFound(err) {
-			return f, nil
+func (r *repo) loadItemFromPath(tx *badger.Txn, it vocab.Item, checks ...filters.Check) (vocab.Item, error) {
+	res := make(vocab.ItemCollection, 0)
+	err := vocab.OnItem(it, func(iit vocab.Item) error {
+		if vocab.IsNil(iit) {
+			return nil
 		}
-		return nil, err
-	}
-	return firstOrItem(col), nil
+		if !vocab.IsIRI(iit) {
+			return res.Append(iit)
+		}
+		col, err := r.loadFromPath(tx, iit.GetLink(), checks...)
+		if err != nil {
+			return err
+		}
+		return res.Append(col...)
+	})
+	return res.Normalize(), err
 }
 
 func getObjectKey(p []byte) []byte {
@@ -674,11 +663,11 @@ func (r *repo) loadItemsByIRIs(tx *badger.Txn, checkFn func([]byte) bool, iris .
 	return col, nil
 }
 
-func (r *repo) loadCollectionItems(tx *badger.Txn, colIRI vocab.IRI, ff ...filters.Check) (vocab.ItemCollection, error) {
+func (r *repo) loadCollectionItems(tx *badger.Txn, colIRI vocab.IRI, checks ...filters.Check) (vocab.ItemCollection, error) {
 	col := make(vocab.ItemCollection, 0)
 	path := itemPath(colIRI)
 
-	checkFn := filters.RawMatcher(ff)
+	checkFn := filters.RawMatcher(checks)
 	if isStorageCollectionKey(path) {
 		depth := 1
 		if vocab.ValidCollectionIRI(colIRI) {
@@ -692,7 +681,7 @@ func (r *repo) loadCollectionItems(tx *badger.Txn, colIRI vocab.IRI, ff ...filte
 
 		checkAndLoad := func(val []byte) error {
 			if checkFn(val) {
-				return r.loadFromItem(tx, &col, "", ff...)(val)
+				return r.loadFromItem(tx, &col, "", checks...)(val)
 			}
 			return nil
 		}
