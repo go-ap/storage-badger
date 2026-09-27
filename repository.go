@@ -299,7 +299,7 @@ func (r *repo) AddTo(colIRI vocab.IRI, items ...vocab.Item) error {
 			return err
 		}
 	}
-	if err := wb.Flush(); err != nil {
+	if err = wb.Flush(); err != nil {
 		return err
 	}
 
@@ -337,45 +337,6 @@ func delete(r *repo, it vocab.Item) error {
 	return tx.Flush()
 }
 
-// createCollections
-func createCollections(tx *badger.Txn, it vocab.Item) error {
-	if vocab.IsNil(it) || !vocab.IsObject(it) {
-		return nil
-	}
-	if typ := it.GetType(); typ != nil && vocab.ActorTypes.Match(typ) {
-		_ = vocab.OnActor(it, func(p *vocab.Actor) error {
-			if p.Inbox != nil {
-				p.Inbox, _ = createCollectionInPath(tx, p.Inbox, p)
-			}
-			if p.Outbox != nil {
-				p.Outbox, _ = createCollectionInPath(tx, p.Outbox, p)
-			}
-			if p.Followers != nil {
-				p.Followers, _ = createCollectionInPath(tx, p.Followers, p)
-			}
-			if p.Following != nil {
-				p.Following, _ = createCollectionInPath(tx, p.Following, p)
-			}
-			if p.Liked != nil {
-				p.Liked, _ = createCollectionInPath(tx, p.Liked, p)
-			}
-			return nil
-		})
-	}
-	return vocab.OnObject(it, func(o *vocab.Object) error {
-		if o.Replies != nil {
-			o.Replies, _ = createCollectionInPath(tx, o.Replies, o)
-		}
-		if o.Likes != nil {
-			o.Likes, _ = createCollectionInPath(tx, o.Likes, o)
-		}
-		if o.Shares != nil {
-			o.Shares, _ = createCollectionInPath(tx, o.Shares, o)
-		}
-		return nil
-	})
-}
-
 func save(r *repo, it vocab.Item) (vocab.Item, error) {
 	err := r.root.Update(func(txn *badger.Txn) error {
 		return saveRawItem(txn, it)
@@ -409,9 +370,6 @@ func saveRawItem(txn *badger.Txn, it vocab.Item) error {
 	}
 
 	if !exists {
-		if err = createCollections(txn, it); err != nil {
-			return errors.Annotatef(err, "could not create object's collections")
-		}
 		if collectionTypes.Match(it.GetType()) {
 			colItemsKey := getItemsKey(itemPath(it.GetLink()))
 			if err = txn.Set(colItemsKey, emptyJsonCollection); err != nil {
@@ -421,25 +379,6 @@ func saveRawItem(txn *badger.Txn, it vocab.Item) error {
 	}
 
 	return nil
-}
-
-func createCollectionInPath(txn *badger.Txn, it vocab.Item, owner vocab.Item) (vocab.Item, error) {
-	if vocab.IsNil(it) {
-		return nil, nil
-	}
-
-	if vocab.IsIRI(it) {
-		it = emptyCollection(it.GetLink(), owner)
-	}
-
-	if err := saveRawItem(txn, it); err != nil {
-		return nil, err
-	}
-	rawKey := getItemsKey(itemPath(it.GetLink()))
-	if err := txn.Set(rawKey, emptyJsonCollection); err != nil {
-		return nil, err
-	}
-	return it.GetLink(), nil
 }
 
 func writeFromPath(tx *badger.WriteBatch, it vocab.Item) error {
@@ -506,7 +445,7 @@ func (r *repo) loadFromItem(tx *badger.Txn, into *vocab.ItemCollection, iri voca
 		}
 		if !vocab.IsNil(it) {
 			loadFilteredPropsForItem(r, it, tx, checks...)
-			into.Append(it)
+			_ = into.Append(it)
 		}
 		return nil
 	}
@@ -614,7 +553,7 @@ func (r *repo) loadFromPath(tx *badger.Txn, iri vocab.IRI, checks ...filters.Che
 
 	i, err := tx.Get(k)
 	if err != nil {
-		return nil, errors.NotFoundf("unable to load item %s: %+s", fullPath, err)
+		return nil, errors.NewNotFound(err, "unable to load item %s", fullPath)
 	}
 
 	if err = i.Value(r.loadFromItem(tx, &col, iri, checks...)); err != nil {
