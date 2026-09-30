@@ -8,7 +8,6 @@ import (
 
 	"github.com/dgraph-io/badger/v4"
 	vocab "github.com/go-ap/activitypub"
-	"github.com/go-ap/cache"
 	"github.com/go-ap/errors"
 	"github.com/go-ap/filters"
 	"github.com/google/go-cmp/cmp"
@@ -141,9 +140,8 @@ func Test_repo_Create(t *testing.T) {
 	var emptyExample = emptyCollection("https://example.com/test", vocab.IRI("https://example.com/~jdoe"))
 
 	type fields struct {
-		d     *badger.DB
-		path  string
-		cache cache.CanStore
+		d    *badger.DB
+		path string
 	}
 
 	tests := []struct {
@@ -172,7 +170,6 @@ func Test_repo_Create(t *testing.T) {
 			r := &repo{
 				root:  tt.fields.d,
 				path:  tt.fields.path,
-				cache: tt.fields.cache,
 				logFn: emptyLogFn,
 				errFn: emptyLogFn,
 			}

@@ -5,7 +5,6 @@ go 1.26.0
 require (
 	github.com/dgraph-io/badger/v4 v4.9.6
 	github.com/go-ap/activitypub v0.0.0-20260924153054-b014c6959a68
-	github.com/go-ap/cache v0.0.0-20260925153643-9e8b52f19978
 	github.com/go-ap/errors v0.0.0-20260701132509-92e5e4fd6394
 	github.com/go-ap/filters v0.0.0-20260925153747-c771950b56d6
 	github.com/go-ap/storage-conformance-suite v0.0.0-20260925154035-58b26383e917
@@ -34,7 +33,6 @@ require (
 	github.com/go-logr/stdr v1.2.2 // indirect
 	github.com/google/flatbuffers v25.12.19+incompatible // indirect
 	github.com/google/uuid v1.6.0 // indirect
-	github.com/hashicorp/golang-lru v1.0.2 // indirect
 	github.com/jdkato/prose v1.2.1 // indirect
 	github.com/klauspost/compress v1.20.1 // indirect
 	github.com/leporo/sqlf v1.4.0 // indirect

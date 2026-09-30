@@ -8,7 +8,6 @@ import (
 
 	"github.com/dgraph-io/badger/v4"
 	vocab "github.com/go-ap/activitypub"
-	"github.com/go-ap/cache"
 	"github.com/go-ap/errors"
 	"github.com/go-ap/filters"
 )
@@ -16,7 +15,6 @@ import (
 type repo struct {
 	root  *badger.DB
 	path  string
-	cache cache.CanStore
 	logFn loggerFn
 	errFn loggerFn
 }
