@@ -211,18 +211,7 @@ func (r *repo) Save(it vocab.Item) (vocab.Item, error) {
 		return nil, errors.Newf("Unable to save nil element")
 	}
 
-	var err error
-
-	if it, err = save(r, it); err == nil {
-		op := "Updated"
-		id := it.GetID()
-		if !id.IsValid() {
-			op = "Added new"
-		}
-		r.logFn("%s %s: %s", op, it.GetType(), it.GetLink())
-	}
-
-	return it, err
+	return save(r, it)
 }
 
 // RemoveFrom
