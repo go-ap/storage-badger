@@ -458,3 +458,62 @@ func Test_repo_Save(t *testing.T) {
 		})
 	}
 }
+
+func Test_repo_Save_twice(t *testing.T) {
+	type test struct {
+		name     string
+		fields   fields
+		setupFns []initFn
+		it       vocab.Item
+		it2      vocab.Item
+		want     vocab.Item
+		wantErr  error
+	}
+	tests := []test{
+		{
+			name:     "update type",
+			setupFns: []initFn{withOpenRoot},
+			fields:   fields{path: t.TempDir()},
+			it:       &vocab.Object{ID: "http://example.com", Type: vocab.ActivityVocabularyType("Note")},
+			it2:      &vocab.Object{ID: "http://example.com", Type: vocab.ArticleType},
+			want:     &vocab.Object{ID: "http://example.com", Type: vocab.ArticleType},
+		},
+		{
+			name:     "update add published",
+			setupFns: []initFn{withOpenRoot},
+			fields:   fields{path: t.TempDir()},
+			it:       &vocab.Object{ID: "http://example.com", Type: vocab.ActivityVocabularyType("Note")},
+			it2:      &vocab.Object{ID: "http://example.com", Published: time.Now().Round(time.Second)},
+			want:     &vocab.Object{ID: "http://example.com", Published: time.Now().Round(time.Second)},
+		},
+		{
+			name:     "update add published, updated",
+			setupFns: []initFn{withOpenRoot},
+			fields:   fields{path: t.TempDir()},
+			it:       &vocab.Object{ID: "http://example.com", Type: vocab.ActivityVocabularyType("Note")},
+			it2:      &vocab.Object{ID: "http://example.com", Published: time.Now().Round(time.Second), Updated: time.Now().Round(time.Second)},
+			want:     &vocab.Object{ID: "http://example.com", Published: time.Now().Round(time.Second), Updated: time.Now().Round(time.Second)},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			r := mockRepo(t, tt.fields, tt.setupFns...)
+			t.Cleanup(r.Close)
+
+			_, err := r.Save(tt.it)
+			if err != nil {
+				t.Errorf("Save() new object error = %v", err)
+				return
+			}
+			got, err := r.Save(tt.it2)
+			if !cmp.Equal(err, tt.wantErr, EquateWeakErrors) {
+				t.Errorf("Save() updated object error = %s", cmp.Diff(tt.wantErr, err, EquateWeakErrors))
+				return
+			}
+			if !cmp.Equal(got, tt.want) {
+				t.Errorf("Save() updated object got = %s", cmp.Diff(tt.want, got))
+			}
+		})
+	}
+}
